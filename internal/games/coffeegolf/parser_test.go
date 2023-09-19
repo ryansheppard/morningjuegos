@@ -148,22 +148,26 @@ func TestParseDigitEmojiInRange(t *testing.T) {
 func TestParseStrokeLines(t *testing.T) {
 	t.Parallel()
 
-	modelId := "test1234"
+	modelID := "test1234"
+	guildID := "12345"
 	holeLine := "🟨🟥🟪🟩🟦"
 	strokesLine := "7️⃣5️⃣3️⃣2️⃣3️⃣"
 
-	got := parseStrokeLines(modelId, holeLine, strokesLine)
+	got := parseStrokeLines(modelID, guildID, holeLine, strokesLine)
 	want := []CoffeeGolfHole{
-		{ID: "test1234", RoundID: "test1234", Color: "yellow", Strokes: 7, HoleIndex: 0},
-		{ID: "test1234", RoundID: "test1234", Color: "red", Strokes: 5, HoleIndex: 1},
-		{ID: "test1234", RoundID: "test1234", Color: "purple", Strokes: 3, HoleIndex: 2},
-		{ID: "test1234", RoundID: "test1234", Color: "green", Strokes: 2, HoleIndex: 3},
-		{ID: "test1234", RoundID: "test1234", Color: "blue", Strokes: 3, HoleIndex: 4},
+		{ID: "test1234", GuildID: "12345", RoundID: "test1234", Color: "yellow", Strokes: 7, HoleIndex: 0},
+		{ID: "test1234", GuildID: "12345", RoundID: "test1234", Color: "red", Strokes: 5, HoleIndex: 1},
+		{ID: "test1234", GuildID: "12345", RoundID: "test1234", Color: "purple", Strokes: 3, HoleIndex: 2},
+		{ID: "test1234", GuildID: "12345", RoundID: "test1234", Color: "green", Strokes: 2, HoleIndex: 3},
+		{ID: "test1234", GuildID: "12345", RoundID: "test1234", Color: "blue", Strokes: 3, HoleIndex: 4},
 	}
 
 	for i, hole := range want {
 		if hole.RoundID != got[i].RoundID {
 			t.Errorf("Expected %s, got %s", hole.ID, got[i].ID)
+		}
+		if hole.GuildID != got[i].GuildID {
+			t.Errorf("Expected %s, got %s", hole.GuildID, got[i].GuildID)
 		}
 		if hole.Color != got[i].Color {
 			t.Errorf("Expected %s, got %s", hole.Color, got[i].Color)

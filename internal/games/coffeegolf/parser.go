@@ -57,7 +57,7 @@ func NewCoffeeGolfRoundFromString(message string, guildID string, playerName str
 	date := parseDateLine(dateLine)
 	totalStrokes := parseTotalStrikes(totalStrokeLine)
 	percentLine := parsePercentLine(totalStrokeLine)
-	holes := parseStrokeLines(id, holeLine, strokesLine)
+	holes := parseStrokeLines(id, guildID, holeLine, strokesLine)
 
 	return &CoffeeGolfRound{
 		ID:           id,
@@ -97,7 +97,7 @@ func parsePercentLine(totalStrokeLine string) string {
 	return ""
 }
 
-func parseStrokeLines(modelID string, holeLine string, strokesLine string) []CoffeeGolfHole {
+func parseStrokeLines(modelID string, guildID string, holeLine string, strokesLine string) []CoffeeGolfHole {
 	var holeColors []string
 	for _, hole := range holeLine {
 		holeColor := parseHoleEmoji(string(hole))
@@ -116,6 +116,7 @@ func parseStrokeLines(modelID string, holeLine string, strokesLine string) []Cof
 	for i, stroke := range strokes {
 		hole := CoffeeGolfHole{
 			ID:         uuid.NewString(),
+			GuildID:    guildID,
 			RoundID:    modelID,
 			Color:      holeColors[i],
 			Strokes:    stroke,
