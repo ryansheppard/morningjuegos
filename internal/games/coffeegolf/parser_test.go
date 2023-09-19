@@ -154,11 +154,11 @@ func TestParseStrokeLines(t *testing.T) {
 
 	got := parseStrokeLines(modelId, holeLine, strokesLine)
 	want := []CoffeeGolfHole{
-		{ID: "test1234", RoundID: "test1234", Color: "yellow", Strokes: 7, Index: 0},
-		{ID: "test1234", RoundID: "test1234", Color: "red", Strokes: 5, Index: 1},
-		{ID: "test1234", RoundID: "test1234", Color: "purple", Strokes: 3, Index: 2},
-		{ID: "test1234", RoundID: "test1234", Color: "green", Strokes: 2, Index: 3},
-		{ID: "test1234", RoundID: "test1234", Color: "blue", Strokes: 3, Index: 4},
+		{ID: "test1234", RoundID: "test1234", Color: "yellow", Strokes: 7, HoleIndex: 0},
+		{ID: "test1234", RoundID: "test1234", Color: "red", Strokes: 5, HoleIndex: 1},
+		{ID: "test1234", RoundID: "test1234", Color: "purple", Strokes: 3, HoleIndex: 2},
+		{ID: "test1234", RoundID: "test1234", Color: "green", Strokes: 2, HoleIndex: 3},
+		{ID: "test1234", RoundID: "test1234", Color: "blue", Strokes: 3, HoleIndex: 4},
 	}
 
 	for i, hole := range want {
@@ -171,8 +171,8 @@ func TestParseStrokeLines(t *testing.T) {
 		if hole.Strokes != got[i].Strokes {
 			t.Errorf("Expected %d, got %d", hole.Strokes, got[i].Strokes)
 		}
-		if hole.Index != got[i].Index {
-			t.Errorf("Expected %d, got %d", hole.Index, got[i].Index)
+		if hole.HoleIndex != got[i].HoleIndex {
+			t.Errorf("Expected %d, got %d", hole.HoleIndex, got[i].HoleIndex)
 		}
 	}
 

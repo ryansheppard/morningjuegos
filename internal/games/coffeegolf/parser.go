@@ -89,7 +89,7 @@ func parseStrokeLines(modelID string, holeLine string, strokesLine string) []Cof
 			RoundID:    modelID,
 			Color:      holeColors[i],
 			Strokes:    stroke,
-			Index:      i,
+			HoleIndex:  i,
 			InsertedAt: time.Now().Unix(),
 		}
 		holes = append(holes, hole)

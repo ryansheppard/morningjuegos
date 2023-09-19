@@ -24,6 +24,6 @@ type CoffeeGolfHole struct {
 	RoundID    string
 	Color      string
 	Strokes    int
-	Index      int
+	HoleIndex  int
 	InsertedAt int64
 }

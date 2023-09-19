@@ -16,7 +16,7 @@ func (cg *CoffeeGolfRound) Insert() bool {
 	exists, err := DB.
 		NewSelect().
 		Model((*CoffeeGolfRound)(nil)).
-		Where("player_name = ? AND date(round(inserted_at), 'unixepoch') = date()", cg.PlayerName).
+		Where("player_name = ? AND date(inserted_at, 'unixepoch') = date()", cg.PlayerName).
 		Exists(context.TODO())
 
 	if err != nil {
@@ -52,7 +52,7 @@ func GetLeaders(limit int) []CoffeeGolfRound {
 	DB.
 		NewSelect().
 		Model((*CoffeeGolfRound)(nil)).
-		Where("date(round(inserted_at), 'unixepoch') = date()").
+		Where("date(inserted_at, 'unixepoch') = date()").
 		Order("total_strokes ASC").
 		Limit(limit).
 		Scan(context.TODO(), &rounds)
@@ -71,4 +71,27 @@ func GetHardestHole() *CoffeeGolfHole {
 		Limit(1).
 		Scan(context.TODO())
 	return hole
+}
+
+func mostCommonHole(index int) string {
+
+	hole := new(CoffeeGolfHole)
+	DB.
+		NewSelect().
+		Model(hole).
+		ColumnExpr("CAST(COUNT(color) as INT) AS strokes, color").
+		Where("date(inserted_at, 'unixepoch') = date() AND hole_index = ?", index).
+		Group("color").
+		Order("strokes desc").
+		Limit(1).
+		Scan(context.TODO())
+	return hole.Color
+}
+
+func MostCommonFirstHole() string {
+	return mostCommonHole(0)
+}
+
+func MostCommonLastHole() string {
+	return mostCommonHole(4)
 }
