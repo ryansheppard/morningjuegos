@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"os"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/sqlitedialect"
@@ -14,7 +15,8 @@ import (
 )
 
 func main() {
-	sqldb, err := sql.Open(sqliteshim.ShimName, "db.sqlite3")
+	dbPath := os.Getenv("DB_PATH")
+	sqldb, err := sql.Open(sqliteshim.ShimName, dbPath)
 	if err != nil {
 		panic(err)
 	}

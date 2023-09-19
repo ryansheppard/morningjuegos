@@ -18,11 +18,11 @@ func SetDB(db *bun.DB) {
 	DB = db
 }
 
-func init() {
-	if err := Migrations.DiscoverCaller(); err != nil {
-		panic(err)
-	}
-}
+// func init() {
+// 	if err := Migrations.DiscoverCaller(); err != nil {
+// 		panic(err)
+// 	}
+// }
 
 func InitMigrations() {
 	migrator = migrate.NewMigrator(DB, Migrations)
