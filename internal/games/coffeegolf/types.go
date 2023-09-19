@@ -13,6 +13,7 @@ type CoffeeGolfRound struct {
 	OriginalDate string
 	InsertedAt   int64
 	TotalStrokes int
+	Percentage   string
 	Holes        []CoffeeGolfHole `bun:"rel:has-many,join:id=round_id"`
 }
 

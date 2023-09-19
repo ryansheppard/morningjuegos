@@ -5,7 +5,7 @@ import (
 )
 
 const testString = `Coffee Golf - Sept 18
-20 Strokes
+20 Strokes - Top 50%
 
 🟨🟥🟪🟩🟦
 7️⃣5️⃣3️⃣2️⃣3️⃣
@@ -46,6 +46,28 @@ func TestParseTotalStrikes(t *testing.T) {
 	got := parseTotalStrikes(line)
 	if want != got {
 		t.Errorf("Expected %d, got %d", want, got)
+	}
+}
+
+func TestHasPercentLine(t *testing.T) {
+	t.Parallel()
+
+	line := "20 Strokes - Top 50%"
+	want := "50%"
+	got := parsePercentLine(line)
+	if want != got {
+		t.Errorf("Expected %s, got %s", want, got)
+	}
+}
+
+func TestDoesNotHavePercentLine(t *testing.T) {
+	t.Parallel()
+
+	line := "20 Strokes"
+	want := ""
+	got := parsePercentLine(line)
+	if want != got {
+		t.Errorf("Expected %s, got %s", want, got)
 	}
 }
 

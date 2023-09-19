@@ -27,6 +27,7 @@ func NewCoffeeGolfRoundFromString(message string, playerName string, playerID st
 
 	date := parseDateLine(dateLine)
 	totalStrokes := parseTotalStrikes(totalStrokeLine)
+	percentLine := parsePercentLine(totalStrokeLine)
 	holes := parseStrokeLines(id, holeLine, strokesLine)
 
 	return &CoffeeGolfRound{
@@ -36,6 +37,7 @@ func NewCoffeeGolfRoundFromString(message string, playerName string, playerID st
 		OriginalDate: date,
 		InsertedAt:   time.Now().Unix(),
 		TotalStrokes: totalStrokes,
+		Percentage:   percentLine,
 		Holes:        holes,
 	}
 }
@@ -54,6 +56,15 @@ func parseTotalStrikes(totalStrokeLine string) int {
 	}
 
 	return totalStrokes
+}
+
+func parsePercentLine(totalStrokeLine string) string {
+	split := strings.Split(totalStrokeLine, " ")
+	if len(split) > 3 {
+		return split[4]
+	}
+
+	return ""
 }
 
 func parseStrokeLines(modelID string, holeLine string, strokesLine string) []CoffeeGolfHole {
