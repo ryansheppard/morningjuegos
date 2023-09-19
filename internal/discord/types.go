@@ -2,7 +2,6 @@ package discord
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -23,7 +22,11 @@ func NewDiscord(token string, appID string) *Discord {
 	dg.AddHandler(messageCreate)
 
 	// TODO: clean these up
-	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsGuildMembers | discordgo.IntentMessageContent | discordgo.IntentGuildMessageReactions
+	dg.Identify.Intents = discordgo.IntentsGuilds |
+		discordgo.IntentsGuildMessages |
+		discordgo.IntentsGuildMembers |
+		discordgo.IntentMessageContent |
+		discordgo.IntentGuildMessageReactions
 
 	err = dg.Open()
 	if err != nil {
@@ -40,11 +43,13 @@ func (d *Discord) AddParser(parser Parser) {
 	Parsers = append(Parsers, parser)
 }
 
-func (d *Discord) AddCommand(command *discordgo.ApplicationCommand, handler func(*discordgo.Session, *discordgo.InteractionCreate)) {
+func (d *Discord) AddCommand(command *discordgo.ApplicationCommand) {
 	_, err := d.Discord.ApplicationCommandCreate(d.AppID, "", command)
 	if err != nil {
-		log.Panicf("Cannot create '%v' command: %v", command.Name, err)
+		fmt.Errorf("Cannot create '%v' command: %v", command.Name, err)
 	}
+}
 
+func (d *Discord) AddCommandHandler(handler func(*discordgo.Session, *discordgo.InteractionCreate)) {
 	d.Discord.AddHandler(handler)
 }

@@ -20,8 +20,14 @@ var botCmd = &cobra.Command{
 		token := os.Getenv("DISCORD_TOKEN")
 		appID := os.Getenv("DISCORD_APP_ID")
 		d := discord.NewDiscord(token, appID)
-		d.AddParser(coffeegolf.NewCoffeeGolfParser())
-		d.AddCommand(coffeegolf.LeaderboardCommand, coffeegolf.Leaderboard)
+
+		cg := discord.NewGame(
+			coffeegolf.NewCoffeeGolfParser(),
+			coffeegolf.Commands,
+			coffeegolf.Handlers,
+		)
+
+		cg.Register(d)
 
 		fmt.Println("MorningJuegos is now running. Press CTRL-C to exit.")
 		sc := make(chan os.Signal, 1)
