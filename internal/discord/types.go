@@ -7,8 +7,11 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+var Parsers []Parser
+
 type Discord struct {
 	Discord *discordgo.Session
+	AppID   string
 }
 
 func NewDiscord(token string, appID string) *Discord {
@@ -16,21 +19,6 @@ func NewDiscord(token string, appID string) *Discord {
 	if err != nil {
 		panic(err)
 	}
-
-	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
-	for i, v := range commands {
-		cmd, err := dg.ApplicationCommandCreate(appID, "", v)
-		if err != nil {
-			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
-		}
-		registeredCommands[i] = cmd
-	}
-
-	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-			h(s, i)
-		}
-	})
 
 	dg.AddHandler(messageCreate)
 
@@ -44,5 +32,19 @@ func NewDiscord(token string, appID string) *Discord {
 
 	return &Discord{
 		Discord: dg,
+		AppID:   appID,
 	}
+}
+
+func (d *Discord) AddParser(parser Parser) {
+	Parsers = append(Parsers, parser)
+}
+
+func (d *Discord) AddCommand(command *discordgo.ApplicationCommand, handler func(*discordgo.Session, *discordgo.InteractionCreate)) {
+	_, err := d.Discord.ApplicationCommandCreate(d.AppID, "", command)
+	if err != nil {
+		log.Panicf("Cannot create '%v' command: %v", command.Name, err)
+	}
+
+	d.Discord.AddHandler(handler)
 }

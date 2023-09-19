@@ -1,28 +1,31 @@
 package discord
 
 import (
-	"fmt"
-
 	"github.com/bwmarrin/discordgo"
-
-	"github.com/ryansheppard/morningjuegos/internal/games/coffeegolf"
 )
+
+type Parser interface {
+	ParseGame(message *discordgo.MessageCreate) ParserResponse
+}
+
+type ParserResponse struct {
+	IsGame   bool
+	Inserted bool
+}
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 
-	message := m.Content
-	isCoffeGolf := coffeegolf.IsCoffeeGolf(message)
-	if isCoffeGolf {
-		fmt.Println("Got a coffee golf message")
-		cg := coffeegolf.NewCoffeeGolfRoundFromString(message, m.Member.Nick, m.Author.ID)
-		inserted := cg.Insert()
-		if inserted {
-			s.MessageReactionAdd(m.ChannelID, m.ID, "👍")
-		} else {
-			s.MessageReactionAdd(m.ChannelID, m.ID, "👎")
+	for _, parser := range Parsers {
+		parsed := parser.ParseGame(m)
+		if parsed.IsGame {
+			if parsed.Inserted {
+				s.MessageReactionAdd(m.ChannelID, m.ID, "👍")
+			} else {
+				s.MessageReactionAdd(m.ChannelID, m.ID, "👎")
+			}
 		}
 	}
 }

@@ -1,19 +1,49 @@
 package coffeegolf
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/google/uuid"
+
+	"github.com/ryansheppard/morningjuegos/internal/discord"
 )
 
-func IsCoffeeGolf(message string) bool {
+func isCoffeeGolf(message string) bool {
 	if strings.HasPrefix(message, "Coffee Golf") {
 		return true
 	}
 
 	return false
+}
+
+type CoffeeGolfParser struct {
+}
+
+func (cgp CoffeeGolfParser) ParseGame(m *discordgo.MessageCreate) discord.ParserResponse {
+	message := m.Content
+	isCoffeGolf := isCoffeeGolf(m.Content)
+	if isCoffeGolf {
+		fmt.Println("Got a coffee golf message")
+		cg := NewCoffeeGolfRoundFromString(message, m.Member.Nick, m.Author.ID)
+		inserted := cg.Insert()
+		return discord.ParserResponse{
+			IsGame:   true,
+			Inserted: inserted,
+		}
+	}
+
+	return discord.ParserResponse{
+		IsGame:   false,
+		Inserted: false,
+	}
+}
+
+func NewCoffeeGolfParser() discord.Parser {
+	return &CoffeeGolfParser{}
 }
 
 func NewCoffeeGolfRoundFromString(message string, playerName string, playerID string) *CoffeeGolfRound {

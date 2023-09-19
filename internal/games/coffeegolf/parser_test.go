@@ -14,7 +14,7 @@ const testString = `Coffee Golf - Sept 18
 func TestIsCoffeeGolf(t *testing.T) {
 	t.Parallel()
 
-	if !IsCoffeeGolf(testString) {
+	if !isCoffeeGolf(testString) {
 		t.Error("Expected true, got false")
 	}
 }
@@ -22,7 +22,7 @@ func TestIsCoffeeGolf(t *testing.T) {
 func TestIsNotCoffeeGolf(t *testing.T) {
 	t.Parallel()
 
-	if IsCoffeeGolf("Connections") {
+	if isCoffeeGolf("Connections") {
 		t.Error("Expected true, got false")
 	}
 }
