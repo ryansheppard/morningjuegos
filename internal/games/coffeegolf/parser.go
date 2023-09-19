@@ -74,11 +74,12 @@ func parseStrokeLines(modelID string, holeLine string, strokesLine string) []Cof
 	holes := []CoffeeGolfHole{}
 	for i, stroke := range strokes {
 		hole := CoffeeGolfHole{
-			ID:      uuid.NewString(),
-			RoundID: modelID,
-			Color:   holeColors[i],
-			Strokes: stroke,
-			Index:   i,
+			ID:         uuid.NewString(),
+			RoundID:    modelID,
+			Color:      holeColors[i],
+			Strokes:    stroke,
+			Index:      i,
+			InsertedAt: time.Now().Unix(),
 		}
 		holes = append(holes, hole)
 	}

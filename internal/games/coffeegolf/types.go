@@ -19,9 +19,10 @@ type CoffeeGolfRound struct {
 type CoffeeGolfHole struct {
 	bun.BaseModel `bun:"table:coffee_golf_hole"`
 
-	ID      string `bun:"id,pk"`
-	RoundID string
-	Color   string
-	Strokes int
-	Index   int
+	ID         string `bun:"id,pk"`
+	RoundID    string
+	Color      string
+	Strokes    int
+	Index      int
+	InsertedAt int64
 }

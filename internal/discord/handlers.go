@@ -2,13 +2,12 @@ package discord
 
 import (
 	"fmt"
-	"log"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/ryansheppard/morningjuegos/internal/games/coffeegolf"
 )
+
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
