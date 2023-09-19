@@ -8,8 +8,8 @@ import (
 )
 
 var LeaderboardCommand = &discordgo.ApplicationCommand{
-	Name:        "leaderboard",
-	Description: "Get the leaderboard for Coffee Golf",
+	Name:        "coffeegolf",
+	Description: "Gets the leaderboard for Coffee Golf",
 }
 
 func Leaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {

@@ -2,6 +2,7 @@ package coffeegolf
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/uptrace/bun"
 )
@@ -16,8 +17,10 @@ func (cg *CoffeeGolfRound) Insert() bool {
 	exists, err := DB.
 		NewSelect().
 		Model((*CoffeeGolfRound)(nil)).
-		Where("player_name = ? AND date(inserted_at, 'unixepoch', 'auto') = date()", cg.PlayerName).
+		Where("player_name = ? AND date(inserted_at, 'unixepoch', 'localtime') = date()", cg.PlayerName).
 		Exists(context.TODO())
+
+	fmt.Println("exists", exists)
 
 	if err != nil {
 		panic(err)
