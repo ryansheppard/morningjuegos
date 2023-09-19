@@ -18,7 +18,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if isCoffeGolf {
 		fmt.Println("Got a coffee golf message")
 		cg := coffeegolf.NewCoffeeGolfRoundFromString(message, m.Member.Nick, m.Author.ID)
-		cg.Insert()
-		s.MessageReactionAdd(m.ChannelID, m.ID, "👍")
+		inserted := cg.Insert()
+		if inserted {
+			s.MessageReactionAdd(m.ChannelID, m.ID, "👍")
+		} else {
+			s.MessageReactionAdd(m.ChannelID, m.ID, "👎")
+		}
 	}
 }

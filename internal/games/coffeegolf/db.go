@@ -12,16 +12,38 @@ func SetDB(db *bun.DB) {
 	DB = db
 }
 
-func (cg *CoffeeGolfRound) Insert() {
-	// TODO: limit to once per day
-	_, err := DB.NewInsert().Model(cg).Exec(context.TODO())
+func (cg *CoffeeGolfRound) Insert() bool {
+	exists, err := DB.
+		NewSelect().
+		Model((*CoffeeGolfRound)(nil)).
+		Where("player_name = ? AND date(round(inserted_at), 'unixepoch') = date()", cg.PlayerName).
+		Exists(context.TODO())
+
 	if err != nil {
 		panic(err)
 	}
-	_, err = DB.NewInsert().Model(&cg.Holes).Exec(context.TODO())
+
+	if exists {
+		return false
+	}
+
+	_, err = DB.
+		NewInsert().
+		Model(cg).
+		Exec(context.TODO())
 	if err != nil {
 		panic(err)
 	}
+
+	_, err = DB.
+		NewInsert().
+		Model(&cg.Holes).
+		Exec(context.TODO())
+	if err != nil {
+		panic(err)
+	}
+
+	return true
 }
 
 // TODO: all of these need to be limited to today
