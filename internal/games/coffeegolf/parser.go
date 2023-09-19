@@ -27,7 +27,7 @@ func (cgp CoffeeGolfParser) ParseGame(m *discordgo.MessageCreate) discord.Parser
 	isCoffeGolf := isCoffeeGolf(m.Content)
 	if isCoffeGolf {
 		fmt.Println("Got a coffee golf message")
-		cg := NewCoffeeGolfRoundFromString(message, m.Member.Nick, m.Author.ID)
+		cg := NewCoffeeGolfRoundFromString(message, m.GuildID, m.Member.Nick, m.Author.ID)
 		inserted := cg.Insert()
 		return discord.ParserResponse{
 			IsGame:   true,
@@ -45,7 +45,7 @@ func NewCoffeeGolfParser() discord.Parser {
 	return &CoffeeGolfParser{}
 }
 
-func NewCoffeeGolfRoundFromString(message string, playerName string, playerID string) *CoffeeGolfRound {
+func NewCoffeeGolfRoundFromString(message string, guildID string, playerName string, playerID string) *CoffeeGolfRound {
 	lines := strings.Split(message, "\n")
 	dateLine := lines[0]
 	totalStrokeLine := lines[1]
@@ -63,6 +63,7 @@ func NewCoffeeGolfRoundFromString(message string, playerName string, playerID st
 		ID:           id,
 		PlayerName:   playerName,
 		PlayerID:     playerID,
+		GuildID:      guildID,
 		OriginalDate: date,
 		InsertedAt:   time.Now().Unix(),
 		TotalStrokes: totalStrokes,

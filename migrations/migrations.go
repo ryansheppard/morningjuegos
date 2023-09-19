@@ -49,3 +49,14 @@ func RunMigrations() error {
 	return nil
 
 }
+
+func CreateMigration(name string) error {
+	migrator := migrate.NewMigrator(DB, Migrations)
+	mf, err := migrator.CreateGoMigration(context.TODO(), name)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("created migration %s (%s)\n", mf.Name, mf.Path)
+
+	return nil
+}

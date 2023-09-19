@@ -17,7 +17,7 @@ func (cg *CoffeeGolfRound) Insert() bool {
 	exists, err := DB.
 		NewSelect().
 		Model((*CoffeeGolfRound)(nil)).
-		Where("player_name = ? AND date(inserted_at, 'unixepoch', 'localtime') = date()", cg.PlayerName).
+		Where("player_id = ? AND guild_id = ? AND date(inserted_at, 'unixepoch', 'localtime') = date()", cg.PlayerID, cg.GuildID).
 		Exists(context.TODO())
 
 	fmt.Println("exists", exists)
@@ -49,25 +49,25 @@ func (cg *CoffeeGolfRound) Insert() bool {
 	return true
 }
 
-func GetLeaders(limit int) []CoffeeGolfRound {
+func GetLeaders(guildID string, limit int) []CoffeeGolfRound {
 	var rounds []CoffeeGolfRound
 	DB.
 		NewSelect().
 		Model((*CoffeeGolfRound)(nil)).
-		Where("date(inserted_at, 'unixepoch', 'localtime') = date()").
+		Where("date(inserted_at, 'unixepoch', 'localtime') = date() AND guild_id = ?", guildID).
 		Order("total_strokes ASC").
 		Limit(limit).
 		Scan(context.TODO(), &rounds)
 	return rounds
 }
 
-func GetHardestHole() *CoffeeGolfHole {
+func GetHardestHole(guildID string) *CoffeeGolfHole {
 	hole := new(CoffeeGolfHole)
 	DB.
 		NewSelect().
 		Model(hole).
 		ColumnExpr("CAST(AVG(strokes) as INT) AS strokes, color").
-		Where("date(round(inserted_at), 'unixepoch', 'localtime') = date()").
+		Where("date(round(inserted_at), 'unixepoch', 'localtime') = date() AND guild_id = ?", guildID).
 		Group("color").
 		Order("strokes desc").
 		Limit(1).
@@ -75,14 +75,14 @@ func GetHardestHole() *CoffeeGolfHole {
 	return hole
 }
 
-func mostCommonHole(index int) string {
+func mostCommonHole(guildID string, index int) string {
 
 	hole := new(CoffeeGolfHole)
 	DB.
 		NewSelect().
 		Model(hole).
 		ColumnExpr("CAST(COUNT(color) as INT) AS strokes, color").
-		Where("date(inserted_at, 'unixepoch', 'localtime') = date() AND hole_index = ?", index).
+		Where("date(inserted_at, 'unixepoch', 'localtime') = date() AND hole_index = ? AND guild_id = ?", index, guildID).
 		Group("color").
 		Order("strokes desc").
 		Limit(1).
@@ -90,10 +90,10 @@ func mostCommonHole(index int) string {
 	return hole.Color
 }
 
-func MostCommonFirstHole() string {
-	return mostCommonHole(0)
+func MostCommonFirstHole(guildID string) string {
+	return mostCommonHole(guildID, 0)
 }
 
-func MostCommonLastHole() string {
-	return mostCommonHole(4)
+func MostCommonLastHole(guildID string) string {
+	return mostCommonHole(guildID, 4)
 }

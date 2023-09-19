@@ -8,6 +8,7 @@ type CoffeeGolfRound struct {
 	bun.BaseModel `bun:"table:coffee_golf_round"`
 
 	ID           string `bun:"id,pk"`
+	GuildID      string
 	PlayerName   string
 	PlayerID     string
 	OriginalDate string
@@ -21,6 +22,7 @@ type CoffeeGolfHole struct {
 	bun.BaseModel `bun:"table:coffee_golf_hole"`
 
 	ID         string `bun:"id,pk"`
+	GuildID    string
 	RoundID    string
 	Color      string
 	Strokes    int
