@@ -61,7 +61,7 @@ func NewCoffeeGolfRoundFromString(message string, playerName string, playerID st
 
 	return &CoffeeGolfRound{
 		ID:           id,
-		PlayerName:   "Ryan",
+		PlayerName:   playerName,
 		PlayerID:     playerID,
 		OriginalDate: date,
 		InsertedAt:   time.Now().Unix(),
