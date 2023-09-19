@@ -20,8 +20,7 @@ func isCoffeeGolf(message string) bool {
 	return false
 }
 
-type CoffeeGolfParser struct {
-}
+type CoffeeGolfParser struct{}
 
 func (cgp CoffeeGolfParser) ParseGame(m *discordgo.MessageCreate) discord.ParserResponse {
 	message := m.Content
