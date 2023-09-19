@@ -20,7 +20,7 @@ func generateLeaderboard(guildID string) string {
 	leaderString := strings.Join(leaderStrings, "\n")
 
 	hole := GetHardestHole(guildID)
-	holeString := fmt.Sprintf("The hardest hole was %s and took an average of %d strokes\n", hole.Color, hole.Strokes)
+	holeString := fmt.Sprintf("The hardest hole was %s and took an average of %f strokes\n", hole.Color, hole.Strokes)
 
 	firstMost := MostCommonFirstHole(guildID)
 	lastMost := MostCommonLastHole(guildID)

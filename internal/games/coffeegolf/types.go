@@ -29,3 +29,10 @@ type CoffeeGolfHole struct {
 	HoleIndex  int
 	InsertedAt int64
 }
+
+type HardestHoleResponse struct {
+	bun.BaseModel `bun:"table:coffee_golf_hole"`
+
+	Strokes float64
+	Color   string
+}

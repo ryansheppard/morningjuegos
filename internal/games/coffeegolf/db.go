@@ -61,17 +61,19 @@ func GetLeaders(guildID string, limit int) []CoffeeGolfRound {
 	return rounds
 }
 
-func GetHardestHole(guildID string) *CoffeeGolfHole {
-	hole := new(CoffeeGolfHole)
+func GetHardestHole(guildID string) *HardestHoleResponse {
+	hole := new(HardestHoleResponse)
 	DB.
 		NewSelect().
 		Model(hole).
-		ColumnExpr("CAST(AVG(strokes) as INT) AS strokes, color").
+		ColumnExpr("AVG(strokes) AS strokes, color").
 		Where("date(round(inserted_at), 'unixepoch', 'localtime') = date() AND guild_id = ?", guildID).
 		Group("color").
 		Order("strokes desc").
 		Limit(1).
 		Scan(context.TODO())
+
+	fmt.Println("hole", hole)
 	return hole
 }
 
