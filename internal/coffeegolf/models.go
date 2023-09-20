@@ -4,7 +4,8 @@ import (
 	"github.com/uptrace/bun"
 )
 
-type CoffeeGolfRound struct {
+// Round represents a single round of Coffee Golf
+type Round struct {
 	bun.BaseModel `bun:"table:coffee_golf_round"`
 
 	ID           string     `bun:"id,pk"`
@@ -17,10 +18,11 @@ type CoffeeGolfRound struct {
 	InsertedAt   int64
 	TotalStrokes int
 	Percentage   string
-	Holes        []CoffeeGolfHole `bun:"rel:has-many,join:id=round_id"`
+	Holes        []Hole `bun:"rel:has-many,join:id=round_id"`
 }
 
-type CoffeeGolfHole struct {
+// Hole represents a single hole of Coffee Golf
+type Hole struct {
 	bun.BaseModel `bun:"table:coffee_golf_hole"`
 
 	ID           string     `bun:"id,pk"`
@@ -34,6 +36,7 @@ type CoffeeGolfHole struct {
 	InsertedAt   int64
 }
 
+// HardestHoleResponse represents the response for the hardest hole command
 type HardestHoleResponse struct {
 	bun.BaseModel `bun:"table:coffee_golf_hole"`
 
@@ -41,6 +44,7 @@ type HardestHoleResponse struct {
 	Color   string
 }
 
+// Tournament represents a single tournament of Coffee Golf
 type Tournament struct {
 	bun.BaseModel `bun:"table:coffee_golf_tournament"`
 
@@ -50,6 +54,7 @@ type Tournament struct {
 	End     int64
 }
 
+// TournamentWinner represents a single winner of a Coffee Golf tournament
 type TournamentWinner struct {
 	bun.BaseModel `bun:"table:coffee_golf_tournament_winner"`
 	ID            string `bun:"id,pk"`

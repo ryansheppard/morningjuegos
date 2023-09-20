@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 		},
 	}
 
-	db.RegisterModel((*CoffeeGolfRound)(nil), (*CoffeeGolfHole)(nil), (*Tournament)(nil), (*TournamentWinner)(nil))
+	db.RegisterModel((*Round)(nil), (*Hole)(nil), (*Tournament)(nil), (*TournamentWinner)(nil))
 
 	fixture = dbfixture.New(db, dbfixture.WithRecreateTables(), dbfixture.WithTemplateFuncs(funcMap))
 	if err = fixture.Load(context.TODO(), os.DirFS("testdata"), "fixture.yml"); err != nil {
@@ -53,7 +53,7 @@ func TestMain(m *testing.M) {
 func TestGetLeaders(t *testing.T) {
 	t.Parallel()
 
-	leaders := GetLeaders("1234", 1, time.Now().Unix())
+	leaders := getLeaders("1234", 1, time.Now().Unix())
 
 	if len(leaders) != 1 {
 		t.Error("len(leaders) != 1")
@@ -63,7 +63,7 @@ func TestGetLeaders(t *testing.T) {
 func TestGetLeadersEmpty(t *testing.T) {
 	t.Parallel()
 
-	leaders := GetLeaders("12354", 1, time.Now().Unix())
+	leaders := getLeaders("12354", 1, time.Now().Unix())
 
 	if len(leaders) != 0 {
 		t.Error("len(leaders) != 0")
@@ -73,7 +73,7 @@ func TestGetLeadersEmpty(t *testing.T) {
 func TestGetHardestHole(t *testing.T) {
 	t.Parallel()
 
-	hardest := GetHardestHole("1234", time.Now().Unix())
+	hardest := getHardestHole("1234", time.Now().Unix())
 	want := &HardestHoleResponse{
 		Color:   "blue",
 		Strokes: 3,
@@ -86,7 +86,7 @@ func TestGetHardestHole(t *testing.T) {
 
 func TestMostCommonFirstHole(t *testing.T) {
 	t.Parallel()
-	hole := MostCommonFirstHole("1234", time.Now().Unix())
+	hole := mostCommonFirstHole("1234", time.Now().Unix())
 	if hole != "blue" {
 		t.Error("hole != blue")
 	}
@@ -94,7 +94,7 @@ func TestMostCommonFirstHole(t *testing.T) {
 
 func TestMostCommonLastHole(t *testing.T) {
 	t.Parallel()
-	hole := MostCommonLastHole("1234", time.Now().Unix())
+	hole := mostCommonLastHole("1234", time.Now().Unix())
 	if hole != "red" {
 		t.Error("hole != red")
 	}
@@ -113,9 +113,9 @@ func TestInsert(t *testing.T) {
 	t.Parallel()
 
 	holes := []string{"red", "blue", "green", "purple", "yellow"}
-	coffeeGolfHoles := []CoffeeGolfHole{}
+	coffeeGolfHoles := []Hole{}
 	for i, hole := range holes {
-		coffeeGolfHoles = append(coffeeGolfHoles, CoffeeGolfHole{
+		coffeeGolfHoles = append(coffeeGolfHoles, Hole{
 			ID:         strconv.Itoa(i),
 			GuildID:    "12345",
 			RoundID:    "12345",
@@ -126,7 +126,7 @@ func TestInsert(t *testing.T) {
 		})
 	}
 
-	round := CoffeeGolfRound{
+	round := Round{
 		ID:           "12345",
 		GuildID:      "12345",
 		PlayerName:   "test",
@@ -140,7 +140,7 @@ func TestInsert(t *testing.T) {
 
 	round.Insert()
 
-	got := new(CoffeeGolfRound)
+	got := new(Round)
 	DB.NewSelect().Model(got).Where("id = ?", "12345").Scan(context.TODO())
 
 	if got == nil {
@@ -159,7 +159,7 @@ func TestInsert(t *testing.T) {
 
 func TestGetActiveTournament(t *testing.T) {
 	t.Parallel()
-	tournament := GetActiveTournament()
+	tournament := getActiveTournament()
 	fmt.Println(tournament)
 	if tournament == nil {
 		t.Error("tournament == nil")

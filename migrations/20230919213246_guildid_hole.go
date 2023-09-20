@@ -11,7 +11,7 @@ import (
 func init() {
 	Migrations.MustRegister(func(ctx context.Context, db *bun.DB) error {
 		fmt.Print(" [up migration] ")
-		_, err := db.NewAddColumn().Model((*coffeegolf.CoffeeGolfHole)(nil)).ColumnExpr("guild_id").Exec(ctx)
+		_, err := db.NewAddColumn().Model((*coffeegolf.Hole)(nil)).ColumnExpr("guild_id").Exec(ctx)
 		if err != nil {
 			return err
 		}

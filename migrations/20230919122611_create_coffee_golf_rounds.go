@@ -9,11 +9,11 @@ import (
 
 func init() {
 	Migrations.MustRegister(func(ctx context.Context, db *bun.DB) error {
-		_, err := db.NewCreateTable().Model((*coffeegolf.CoffeeGolfRound)(nil)).Exec(context.TODO())
+		_, err := db.NewCreateTable().Model((*coffeegolf.Round)(nil)).Exec(context.TODO())
 		if err != nil {
 			return err
 		}
-		_, err = db.NewCreateTable().Model((*coffeegolf.CoffeeGolfHole)(nil)).Exec(context.TODO())
+		_, err = db.NewCreateTable().Model((*coffeegolf.Hole)(nil)).Exec(context.TODO())
 		if err != nil {
 			return err
 		}

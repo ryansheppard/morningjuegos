@@ -9,7 +9,7 @@ import (
 // TODO: refactor to use a struct
 func generateLeaderboard(guildID string) string {
 	now := time.Now().Unix()
-	leaders := GetLeaders(guildID, 5, now)
+	leaders := getLeaders(guildID, 5, now)
 	if len(leaders) == 0 {
 		return "No one has played yet!"
 	}
@@ -21,11 +21,11 @@ func generateLeaderboard(guildID string) string {
 
 	leaderString := strings.Join(leaderStrings, "\n")
 
-	hole := GetHardestHole(guildID, now)
+	hole := getHardestHole(guildID, now)
 	holeString := fmt.Sprintf("The hardest hole was %s and took an average of %0.2f strokes\n", hole.Color, hole.Strokes)
 
-	firstMost := MostCommonFirstHole(guildID, now)
-	lastMost := MostCommonLastHole(guildID, now)
+	firstMost := mostCommonFirstHole(guildID, now)
+	lastMost := mostCommonLastHole(guildID, now)
 	mostCommonString := fmt.Sprintf("The most common first hole was %s and the last was %s", firstMost, lastMost)
 
 	statsStr := "\n" + "Stats powered by AWS Next Gen Stats" + "\n" + holeString + "\n" + mostCommonString

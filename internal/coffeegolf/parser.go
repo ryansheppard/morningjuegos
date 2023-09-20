@@ -12,11 +12,12 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/game"
 )
 
+// GetCoffeeGolfGame returns a new Coffee Golf game
 func GetCoffeeGolfGame() *game.Game {
 	return &game.Game{
-		NewCoffeeGolfParser(),
-		Commands,
-		Handlers,
+		NewParser(),
+		commands,
+		handlers,
 	}
 }
 
@@ -28,14 +29,16 @@ func isCoffeeGolf(message string) bool {
 	return false
 }
 
-type CoffeeGolfParser struct{}
+// Parser parses a Coffee Golf game
+type Parser struct{}
 
-func (cgp CoffeeGolfParser) ParseGame(m *discordgo.MessageCreate) game.ParserResponse {
+// ParseGame parses a Coffee Golf game from a Discord message
+func (p *Parser) ParseGame(m *discordgo.MessageCreate) game.ParserResponse {
 	message := m.Content
 	isCoffeGolf := isCoffeeGolf(m.Content)
 	if isCoffeGolf {
 		fmt.Println("Got a coffee golf message")
-		cg := NewCoffeeGolfRoundFromString(message, m.GuildID, m.Member.Nick, m.Author.ID)
+		cg := NewRoundFromString(message, m.GuildID, m.Member.Nick, m.Author.ID)
 		inserted := cg.Insert()
 		return game.ParserResponse{
 			IsGame:   true,
@@ -49,11 +52,13 @@ func (cgp CoffeeGolfParser) ParseGame(m *discordgo.MessageCreate) game.ParserRes
 	}
 }
 
-func NewCoffeeGolfParser() game.Parser {
-	return &CoffeeGolfParser{}
+// NewParser returns a new Coffee Golf parser
+func NewParser() game.Parser {
+	return &Parser{}
 }
 
-func NewCoffeeGolfRoundFromString(message string, guildID string, playerName string, playerID string) *CoffeeGolfRound {
+// NewRoundFromString returns a new Round from a string
+func NewRoundFromString(message string, guildID string, playerName string, playerID string) *Round {
 	lines := strings.Split(message, "\n")
 	dateLine := lines[0]
 	totalStrokeLine := lines[1]
@@ -67,7 +72,7 @@ func NewCoffeeGolfRoundFromString(message string, guildID string, playerName str
 	percentLine := parsePercentLine(totalStrokeLine)
 	holes := parseStrokeLines(id, guildID, holeLine, strokesLine)
 
-	return &CoffeeGolfRound{
+	return &Round{
 		ID:           id,
 		PlayerName:   playerName,
 		PlayerID:     playerID,
@@ -105,7 +110,7 @@ func parsePercentLine(totalStrokeLine string) string {
 	return ""
 }
 
-func parseStrokeLines(modelID string, guildID string, holeLine string, strokesLine string) []CoffeeGolfHole {
+func parseStrokeLines(modelID string, guildID string, holeLine string, strokesLine string) []Hole {
 	var holeColors []string
 	for _, hole := range holeLine {
 		holeColor := parseHoleEmoji(string(hole))
@@ -120,9 +125,9 @@ func parseStrokeLines(modelID string, guildID string, holeLine string, strokesLi
 		}
 	}
 
-	holes := []CoffeeGolfHole{}
+	holes := []Hole{}
 	for i, stroke := range strokes {
-		hole := CoffeeGolfHole{
+		hole := Hole{
 			ID:         uuid.NewString(),
 			GuildID:    guildID,
 			RoundID:    modelID,

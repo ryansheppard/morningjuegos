@@ -9,13 +9,15 @@ import (
 	"github.com/uptrace/bun"
 )
 
+// DB is the database connection
 var DB *bun.DB
 
+// SetDB sets the DB variable
 func SetDB(db *bun.DB) {
 	DB = db
 }
 
-func GetActiveTournament() *Tournament {
+func getActiveTournament() *Tournament {
 	now := time.Now().Unix()
 	tournament := new(Tournament)
 	DB.
@@ -28,15 +30,14 @@ func GetActiveTournament() *Tournament {
 	return tournament
 }
 
-func (cg *CoffeeGolfRound) Insert() bool {
+// Insert inserts a round into the database
+func (cg *Round) Insert() bool {
 	start, end := utils.GetTimeBoundary(cg.InsertedAt)
 	exists, err := DB.
 		NewSelect().
-		Model((*CoffeeGolfRound)(nil)).
+		Model((*Round)(nil)).
 		Where("player_id = ? AND guild_id = ? AND inserted_at >= ? AND inserted_at <= ?", cg.PlayerID, cg.GuildID, start, end).
 		Exists(context.TODO())
-
-	fmt.Println("exists", exists)
 
 	if err != nil {
 		panic(err)
@@ -45,6 +46,8 @@ func (cg *CoffeeGolfRound) Insert() bool {
 	if exists {
 		return false
 	}
+
+	// tournament := getActiveTournament()
 
 	_, err = DB.
 		NewInsert().
@@ -65,12 +68,12 @@ func (cg *CoffeeGolfRound) Insert() bool {
 	return true
 }
 
-func GetLeaders(guildID string, limit int, timestamp int64) []CoffeeGolfRound {
+func getLeaders(guildID string, limit int, timestamp int64) []Round {
 	start, end := utils.GetTimeBoundary(timestamp)
-	var rounds []CoffeeGolfRound
+	var rounds []Round
 	DB.
 		NewSelect().
-		Model((*CoffeeGolfRound)(nil)).
+		Model((*Round)(nil)).
 		Where("inserted_at >= ? AND inserted_at <= ? AND guild_id = ?", start, end, guildID).
 		Order("total_strokes ASC").
 		Limit(limit).
@@ -78,7 +81,7 @@ func GetLeaders(guildID string, limit int, timestamp int64) []CoffeeGolfRound {
 	return rounds
 }
 
-func GetHardestHole(guildID string, timestamp int64) *HardestHoleResponse {
+func getHardestHole(guildID string, timestamp int64) *HardestHoleResponse {
 	start, end := utils.GetTimeBoundary(timestamp)
 	hole := new(HardestHoleResponse)
 	DB.
@@ -97,7 +100,7 @@ func GetHardestHole(guildID string, timestamp int64) *HardestHoleResponse {
 func mostCommonHole(guildID string, index int, timestamp int64) string {
 	start, end := utils.GetTimeBoundary(timestamp)
 
-	hole := new(CoffeeGolfHole)
+	hole := new(Hole)
 	DB.
 		NewSelect().
 		Model(hole).
@@ -110,10 +113,10 @@ func mostCommonHole(guildID string, index int, timestamp int64) string {
 	return hole.Color
 }
 
-func MostCommonFirstHole(guildID string, timestamp int64) string {
+func mostCommonFirstHole(guildID string, timestamp int64) string {
 	return mostCommonHole(guildID, 0, timestamp)
 }
 
-func MostCommonLastHole(guildID string, timestamp int64) string {
+func mostCommonLastHole(guildID string, timestamp int64) string {
 	return mostCommonHole(guildID, 4, timestamp)
 }

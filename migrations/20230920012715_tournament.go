@@ -20,11 +20,11 @@ func init() {
 			return err
 		}
 
-		_, err = db.NewAddColumn().Model((*coffeegolf.CoffeeGolfRound)(nil)).ColumnExpr("tournament_id").Exec(ctx)
+		_, err = db.NewAddColumn().Model((*coffeegolf.Round)(nil)).ColumnExpr("tournament_id").Exec(ctx)
 		if err != nil {
 			return err
 		}
-		_, err = db.NewAddColumn().Model((*coffeegolf.CoffeeGolfHole)(nil)).ColumnExpr("tournament_id").Exec(ctx)
+		_, err = db.NewAddColumn().Model((*coffeegolf.Hole)(nil)).ColumnExpr("tournament_id").Exec(ctx)
 		if err != nil {
 			return err
 		}

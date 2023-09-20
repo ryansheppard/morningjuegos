@@ -154,7 +154,7 @@ func TestParseStrokeLines(t *testing.T) {
 	strokesLine := "7️⃣5️⃣3️⃣2️⃣3️⃣"
 
 	got := parseStrokeLines(modelID, guildID, holeLine, strokesLine)
-	want := []CoffeeGolfHole{
+	want := []Hole{
 		{ID: "test1234", GuildID: "12345", RoundID: "test1234", Color: "yellow", Strokes: 7, HoleIndex: 0},
 		{ID: "test1234", GuildID: "12345", RoundID: "test1234", Color: "red", Strokes: 5, HoleIndex: 1},
 		{ID: "test1234", GuildID: "12345", RoundID: "test1234", Color: "purple", Strokes: 3, HoleIndex: 2},

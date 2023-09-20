@@ -4,7 +4,7 @@
       id: "a1"
       start: '{{ two_days_ago }}'
       end: '{{ two_days_from_now }}'
-- model: CoffeeGolfRound
+- model: Round
   rows:
     - _id: "abc123"
       id: "abc123"
@@ -16,13 +16,13 @@
       inserted_at: '{{ now }}'
       total_strokes: 10
       percentage: 50%
-- model: CoffeeGolfHole
+- model: Hole
   rows:
     - _id: "one"
       id: "one"
       guild_id: "1234"
       tournament_id: "{{ $.Tournament.a1.ID }}"
-      round_id: "{{ $.CoffeeGolfRound.abc123.ID }}"
+      round_id: "{{ $.Round.abc123.ID }}"
       color: "blue"
       strokes: 3
       hole_index: 0
@@ -31,7 +31,7 @@
       id: "two"
       guild_id: "1234"
       tournament_id: "{{ $.Tournament.a1.ID }}"
-      round_id: "{{ $.CoffeeGolfRound.abc123.ID }}"
+      round_id: "{{ $.Round.abc123.ID }}"
       color: "green"
       strokes: 1
       hole_index: 1
@@ -40,7 +40,7 @@
       id: "three"
       guild_id: "1234"
       tournament_id: "{{ $.Tournament.a1.ID }}"
-      round_id: "{{ $.CoffeeGolfRound.abc123.ID }}"
+      round_id: "{{ $.Round.abc123.ID }}"
       color: "purple"
       strokes: 2
       hole_index: 2
@@ -58,7 +58,7 @@
       id: "five"
       guild_id: "1234"
       tournament_id: "{{ $.Tournament.a1.ID }}"
-      round_id: "{{ $.CoffeeGolfRound.abc123.ID }}"
+      round_id: "{{ $.Round.abc123.ID }}"
       color: "red"
       strokes: 2
       hole_index: 4
