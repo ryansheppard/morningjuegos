@@ -3,6 +3,7 @@ package coffeegolf
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"html/template"
 	"os"
 	"strconv"
@@ -154,4 +155,17 @@ func TestInsert(t *testing.T) {
 		t.Error("got.GuildID != round.GuildID")
 	}
 	// too lazy to write more
+}
+
+func TestGetActiveTournament(t *testing.T) {
+	t.Parallel()
+	tournament := GetActiveTournament()
+	fmt.Println(tournament)
+	if tournament == nil {
+		t.Error("tournament == nil")
+	}
+
+	if tournament.ID != "a1" {
+		t.Error("tournament.ID != a1")
+	}
 }

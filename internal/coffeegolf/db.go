@@ -21,9 +21,10 @@ func GetActiveTournament() *Tournament {
 	DB.
 		NewSelect().
 		Model(tournament).
-		Where("start_date <= ? AND end_date >= ?", now, now).
+		Where("start <= ? AND end >= ?", now, now).
 		Scan(context.TODO())
 
+	fmt.Println("tournament", tournament)
 	return tournament
 }
 
