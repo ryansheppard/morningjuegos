@@ -4,9 +4,10 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/ryansheppard/morningjuegos/internal/game"
 )
 
-var Parsers []Parser
+var Parsers []game.Parser
 
 type Discord struct {
 	Discord *discordgo.Session
@@ -39,7 +40,19 @@ func NewDiscord(token string, appID string) *Discord {
 	}
 }
 
-func (d *Discord) AddParser(parser Parser) {
+func (d *Discord) RegisterGame(g *game.Game) {
+	d.AddParser(g.Parser)
+
+	for _, command := range g.Commands {
+		d.AddCommand(command)
+	}
+
+	for _, handler := range g.Handlers {
+		d.AddCommandHandler(handler)
+	}
+}
+
+func (d *Discord) AddParser(parser game.Parser) {
 	Parsers = append(Parsers, parser)
 }
 

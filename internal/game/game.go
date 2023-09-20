@@ -1,8 +1,6 @@
-package discord
+package game
 
-import (
-	"github.com/bwmarrin/discordgo"
-)
+import "github.com/bwmarrin/discordgo"
 
 type Parser interface {
 	ParseGame(message *discordgo.MessageCreate) ParserResponse
@@ -28,17 +26,5 @@ func NewGame(
 		Parser:   parser,
 		Commands: commands,
 		Handlers: handlers,
-	}
-}
-
-func (g *Game) Register(d *Discord) {
-	d.AddParser(g.Parser)
-
-	for _, command := range g.Commands {
-		d.AddCommand(command)
-	}
-
-	for _, handler := range g.Handlers {
-		d.AddCommandHandler(handler)
 	}
 }

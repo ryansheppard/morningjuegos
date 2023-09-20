@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ryansheppard/morningjuegos/internal/discord"
+	"github.com/ryansheppard/morningjuegos/internal/game"
 	"github.com/ryansheppard/morningjuegos/internal/games/coffeegolf"
 )
 
@@ -21,13 +22,11 @@ var botCmd = &cobra.Command{
 		appID := os.Getenv("DISCORD_APP_ID")
 		d := discord.NewDiscord(token, appID)
 
-		cg := discord.NewGame(
-			coffeegolf.NewCoffeeGolfParser(),
-			coffeegolf.Commands,
-			coffeegolf.Handlers,
-		)
+		games := []*game.Game{coffeegolf.GetCoffeeGolfGame()}
 
-		cg.Register(d)
+		for _, game := range games {
+			d.RegisterGame(game)
+		}
 
 		fmt.Println("MorningJuegos is now running. Press CTRL-C to exit.")
 		sc := make(chan os.Signal, 1)

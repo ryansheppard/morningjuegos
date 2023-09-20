@@ -9,8 +9,16 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/google/uuid"
 
-	"github.com/ryansheppard/morningjuegos/internal/discord"
+	"github.com/ryansheppard/morningjuegos/internal/game"
 )
+
+func GetCoffeeGolfGame() *game.Game {
+	return &game.Game{
+		NewCoffeeGolfParser(),
+		Commands,
+		Handlers,
+	}
+}
 
 func isCoffeeGolf(message string) bool {
 	if strings.HasPrefix(message, "Coffee Golf") {
@@ -22,26 +30,26 @@ func isCoffeeGolf(message string) bool {
 
 type CoffeeGolfParser struct{}
 
-func (cgp CoffeeGolfParser) ParseGame(m *discordgo.MessageCreate) discord.ParserResponse {
+func (cgp CoffeeGolfParser) ParseGame(m *discordgo.MessageCreate) game.ParserResponse {
 	message := m.Content
 	isCoffeGolf := isCoffeeGolf(m.Content)
 	if isCoffeGolf {
 		fmt.Println("Got a coffee golf message")
 		cg := NewCoffeeGolfRoundFromString(message, m.GuildID, m.Member.Nick, m.Author.ID)
 		inserted := cg.Insert()
-		return discord.ParserResponse{
+		return game.ParserResponse{
 			IsGame:   true,
 			Inserted: inserted,
 		}
 	}
 
-	return discord.ParserResponse{
+	return game.ParserResponse{
 		IsGame:   false,
 		Inserted: false,
 	}
 }
 
-func NewCoffeeGolfParser() discord.Parser {
+func NewCoffeeGolfParser() game.Parser {
 	return &CoffeeGolfParser{}
 }
 
