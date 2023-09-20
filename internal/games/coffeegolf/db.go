@@ -77,7 +77,6 @@ func GetHardestHole(guildID string, timestamp int64) *HardestHoleResponse {
 		Limit(1).
 		Scan(context.TODO())
 
-	fmt.Println("hole", hole)
 	return hole
 }
 
