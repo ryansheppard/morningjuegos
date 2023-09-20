@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ryansheppard/morningjuegos/internal/games/coffeegolf"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf"
 	"github.com/uptrace/bun"
 )
 

@@ -10,7 +10,7 @@ import (
 	"github.com/uptrace/bun/extra/bundebug"
 
 	"github.com/ryansheppard/morningjuegos/cmd"
-	"github.com/ryansheppard/morningjuegos/internal/games/coffeegolf"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf"
 	"github.com/ryansheppard/morningjuegos/migrations"
 )
 

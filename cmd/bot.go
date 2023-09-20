@@ -8,9 +8,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf"
 	"github.com/ryansheppard/morningjuegos/internal/discord"
 	"github.com/ryansheppard/morningjuegos/internal/game"
-	"github.com/ryansheppard/morningjuegos/internal/games/coffeegolf"
 )
 
 // botCmd represents the bot command
