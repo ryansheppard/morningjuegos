@@ -2,12 +2,13 @@ package coffeegolf
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/ryansheppard/morningjuegos/internal/utils"
 	"github.com/uptrace/bun"
 )
+
+const defaultTournamentDays = 10
 
 // DB is the database connection
 var DB *bun.DB
@@ -26,7 +27,25 @@ func getActiveTournament() *Tournament {
 		Where("start <= ? AND end >= ?", now, now).
 		Scan(context.TODO())
 
-	fmt.Println("tournament", tournament)
+	if tournament == nil {
+		tournament = createTournament(defaultTournamentDays)
+	}
+
+	return tournament
+}
+
+func createTournament(days int) *Tournament {
+	tournament := new(Tournament)
+	tournament.Start = time.Now().Unix()
+	daysToEnd := time.Duration(days) * 24 * time.Hour
+	tournament.End = time.Now().Add(daysToEnd).Unix()
+	_, err := DB.
+		NewInsert().
+		Model(tournament).
+		Exec(context.TODO())
+	if err != nil {
+		panic(err)
+	}
 	return tournament
 }
 
@@ -46,8 +65,6 @@ func (cg *Round) Insert() bool {
 	if exists {
 		return false
 	}
-
-	// tournament := getActiveTournament()
 
 	_, err = DB.
 		NewInsert().

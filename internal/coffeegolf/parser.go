@@ -67,14 +67,20 @@ func NewRoundFromString(message string, guildID string, playerName string, playe
 
 	id := uuid.NewString()
 
+	tournament := getActiveTournament()
+	if tournament == nil {
+		panic("tournament == nil")
+	}
+
 	date := parseDateLine(dateLine)
 	totalStrokes := parseTotalStrikes(totalStrokeLine)
 	percentLine := parsePercentLine(totalStrokeLine)
-	holes := parseStrokeLines(id, guildID, holeLine, strokesLine)
+	holes := parseStrokeLines(id, guildID, tournament.ID, holeLine, strokesLine)
 
 	return &Round{
 		ID:           id,
 		PlayerName:   playerName,
+		TournamentID: tournament.ID,
 		PlayerID:     playerID,
 		GuildID:      guildID,
 		OriginalDate: date,
@@ -110,7 +116,7 @@ func parsePercentLine(totalStrokeLine string) string {
 	return ""
 }
 
-func parseStrokeLines(modelID string, guildID string, holeLine string, strokesLine string) []Hole {
+func parseStrokeLines(modelID string, guildID string, tournamentID string, holeLine string, strokesLine string) []Hole {
 	var holeColors []string
 	for _, hole := range holeLine {
 		holeColor := parseHoleEmoji(string(hole))
@@ -128,13 +134,14 @@ func parseStrokeLines(modelID string, guildID string, holeLine string, strokesLi
 	holes := []Hole{}
 	for i, stroke := range strokes {
 		hole := Hole{
-			ID:         uuid.NewString(),
-			GuildID:    guildID,
-			RoundID:    modelID,
-			Color:      holeColors[i],
-			Strokes:    stroke,
-			HoleIndex:  i,
-			InsertedAt: time.Now().Unix(),
+			ID:           uuid.NewString(),
+			GuildID:      guildID,
+			TournamentID: tournamentID,
+			RoundID:      modelID,
+			Color:        holeColors[i],
+			Strokes:      stroke,
+			HoleIndex:    i,
+			InsertedAt:   time.Now().Unix(),
 		}
 		holes = append(holes, hole)
 	}
