@@ -3,13 +3,16 @@ package coffeegolf
 import (
 	"fmt"
 	"strings"
-	"time"
 )
 
 // TODO: refactor to use a struct
 func generateLeaderboard(guildID string) string {
-	now := time.Now().Unix()
-	leaders := getLeaders(guildID, 5, now)
+	tournament := getActiveTournament(false)
+	if tournament == nil {
+		return "No active tournament"
+	}
+
+	leaders := getLeaders(guildID, tournament.ID, 10)
 	if len(leaders) == 0 {
 		return "No one has played yet!"
 	}

@@ -67,7 +67,7 @@ func NewRoundFromString(message string, guildID string, playerName string, playe
 
 	id := uuid.NewString()
 
-	tournament := getActiveTournament()
+	tournament := getActiveTournament(true)
 	if tournament == nil {
 		panic("tournament == nil")
 	}

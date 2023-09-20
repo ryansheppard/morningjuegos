@@ -18,16 +18,20 @@ func SetDB(db *bun.DB) {
 	DB = db
 }
 
-func getActiveTournament() *Tournament {
+func getActiveTournament(create bool) *Tournament {
 	now := time.Now().Unix()
 	tournament := new(Tournament)
-	DB.
+	err := DB.
 		NewSelect().
 		Model(tournament).
 		Where("start <= ? AND end >= ?", now, now).
 		Scan(context.TODO())
 
-	if tournament == nil {
+	if err != nil || tournament == nil {
+		if !create {
+			panic(err)
+		}
+
 		tournament = createTournament(defaultTournamentDays)
 	}
 
@@ -36,9 +40,14 @@ func getActiveTournament() *Tournament {
 
 func createTournament(days int) *Tournament {
 	tournament := new(Tournament)
-	tournament.Start = time.Now().Unix()
+	now := time.Now()
+
+	tournament.Start = utils.GetStartofDay(now.Unix())
+
 	daysToEnd := time.Duration(days) * 24 * time.Hour
-	tournament.End = time.Now().Add(daysToEnd).Unix()
+	end := utils.GetEndofDay(now.Add(daysToEnd).Unix())
+	tournament.End = end
+
 	_, err := DB.
 		NewInsert().
 		Model(tournament).
@@ -85,21 +94,20 @@ func (cg *Round) Insert() bool {
 	return true
 }
 
-func getLeaders(guildID string, limit int, timestamp int64) []Round {
-	start, end := utils.GetTimeBoundary(timestamp)
+// TODO: need to return winner by strokes and by daily wins
+func getLeaders(guildID string, tournamentID string, limit int) []Round {
 	var rounds []Round
 	DB.
 		NewSelect().
 		Model((*Round)(nil)).
-		Where("inserted_at >= ? AND inserted_at <= ? AND guild_id = ?", start, end, guildID).
+		Where("guild_id = ? AND tournament_id = ?", guildID, tournamentID).
 		Order("total_strokes ASC").
 		Limit(limit).
 		Scan(context.TODO(), &rounds)
 	return rounds
 }
 
-func getHardestHole(guildID string, timestamp int64) *HardestHoleResponse {
-	start, end := utils.GetTimeBoundary(timestamp)
+func getHardestHole(guildID string, tournamentID string) *HardestHoleResponse {
 	hole := new(HardestHoleResponse)
 	DB.
 		NewSelect().

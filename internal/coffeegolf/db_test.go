@@ -159,7 +159,7 @@ func TestInsert(t *testing.T) {
 
 func TestGetActiveTournament(t *testing.T) {
 	t.Parallel()
-	tournament := getActiveTournament()
+	tournament := getActiveTournament(false)
 	fmt.Println(tournament)
 	if tournament == nil {
 		t.Error("tournament == nil")
