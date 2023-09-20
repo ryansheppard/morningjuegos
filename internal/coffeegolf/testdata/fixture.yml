@@ -2,6 +2,7 @@
   rows:
     - _id: "a1"
       id: "a1"
+      guild_id: "1234"
       start: '{{ two_days_ago }}'
       end: '{{ two_days_from_now }}'
 - model: Round

@@ -3,7 +3,6 @@ package coffeegolf
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"html/template"
 	"os"
 	"strconv"
@@ -50,20 +49,20 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func TestGetLeaders(t *testing.T) {
+func TestGetStrokeLeaders(t *testing.T) {
 	t.Parallel()
 
-	leaders := getLeaders("1234", 1, time.Now().Unix())
+	leaders := getStrokeLeaders("1234", "a1")
 
 	if len(leaders) != 1 {
 		t.Error("len(leaders) != 1")
 	}
 }
 
-func TestGetLeadersEmpty(t *testing.T) {
+func TestGetStrokeLeadersEmpty(t *testing.T) {
 	t.Parallel()
 
-	leaders := getLeaders("12354", 1, time.Now().Unix())
+	leaders := getStrokeLeaders("12354", "a1")
 
 	if len(leaders) != 0 {
 		t.Error("len(leaders) != 0")
@@ -73,7 +72,7 @@ func TestGetLeadersEmpty(t *testing.T) {
 func TestGetHardestHole(t *testing.T) {
 	t.Parallel()
 
-	hardest := getHardestHole("1234", time.Now().Unix())
+	hardest := getHardestHole("1234", "a1")
 	want := &HardestHoleResponse{
 		Color:   "blue",
 		Strokes: 3,
@@ -86,7 +85,7 @@ func TestGetHardestHole(t *testing.T) {
 
 func TestMostCommonFirstHole(t *testing.T) {
 	t.Parallel()
-	hole := mostCommonFirstHole("1234", time.Now().Unix())
+	hole := mostCommonFirstHole("1234", "a1")
 	if hole != "blue" {
 		t.Error("hole != blue")
 	}
@@ -94,7 +93,7 @@ func TestMostCommonFirstHole(t *testing.T) {
 
 func TestMostCommonLastHole(t *testing.T) {
 	t.Parallel()
-	hole := mostCommonLastHole("1234", time.Now().Unix())
+	hole := mostCommonLastHole("1234", "a1")
 	if hole != "red" {
 		t.Error("hole != red")
 	}
@@ -103,7 +102,7 @@ func TestMostCommonLastHole(t *testing.T) {
 
 func TestSecondMostCommonHole(t *testing.T) {
 	t.Parallel()
-	hole := mostCommonHole("1234", 1, time.Now().Unix())
+	hole := mostCommonHole("1234", 1, "a1")
 	if hole != "green" {
 		t.Error("hole != green")
 	}
@@ -159,8 +158,7 @@ func TestInsert(t *testing.T) {
 
 func TestGetActiveTournament(t *testing.T) {
 	t.Parallel()
-	tournament := getActiveTournament(false)
-	fmt.Println(tournament)
+	tournament := getActiveTournament("1234", false)
 	if tournament == nil {
 		t.Error("tournament == nil")
 	}

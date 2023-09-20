@@ -54,7 +54,6 @@ type Tournament struct {
 	End     int64
 }
 
-// TODO: do we need these?
 // TournamentWinner represents a single winner of a Coffee Golf tournament
 type TournamentWinner struct {
 	bun.BaseModel `bun:"table:coffee_golf_tournament_winner"`

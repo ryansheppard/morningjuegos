@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/ryansheppard/morningjuegos/internal/utils"
 	"github.com/uptrace/bun"
 )
@@ -18,13 +19,15 @@ func SetDB(db *bun.DB) {
 	DB = db
 }
 
-func getActiveTournament(create bool) *Tournament {
+func getActiveTournament(guildID string, create bool) *Tournament {
 	now := time.Now().Unix()
 	tournament := new(Tournament)
 	err := DB.
 		NewSelect().
 		Model(tournament).
-		Where("start <= ? AND end >= ?", now, now).
+		Where("start <= ?", now).
+		Where("end >= ?", now).
+		Where("guild_id = ?", guildID).
 		Scan(context.TODO())
 
 	if err != nil || tournament == nil {
@@ -32,21 +35,23 @@ func getActiveTournament(create bool) *Tournament {
 			panic(err)
 		}
 
-		tournament = createTournament(defaultTournamentDays)
+		tournament = createTournament(guildID, defaultTournamentDays)
 	}
 
 	return tournament
 }
 
-func createTournament(days int) *Tournament {
-	tournament := new(Tournament)
+func createTournament(guildID string, days int) *Tournament {
 	now := time.Now()
-
-	tournament.Start = utils.GetStartofDay(now.Unix())
-
 	daysToEnd := time.Duration(days) * 24 * time.Hour
 	end := utils.GetEndofDay(now.Add(daysToEnd).Unix())
-	tournament.End = end
+
+	tournament := Tournament{
+		ID:      uuid.NewString(),
+		GuildID: guildID,
+		Start:   utils.GetStartofDay(now.Unix()),
+		End:     end,
+	}
 
 	_, err := DB.
 		NewInsert().
@@ -55,7 +60,7 @@ func createTournament(days int) *Tournament {
 	if err != nil {
 		panic(err)
 	}
-	return tournament
+	return &tournament
 }
 
 // Insert inserts a round into the database
@@ -95,14 +100,16 @@ func (cg *Round) Insert() bool {
 }
 
 // TODO: need to return winner by strokes and by daily wins
-func getLeaders(guildID string, tournamentID string, limit int) []Round {
+func getStrokeLeaders(guildID string, tournamentID string) []Round {
 	var rounds []Round
 	DB.
 		NewSelect().
 		Model((*Round)(nil)).
-		Where("guild_id = ? AND tournament_id = ?", guildID, tournamentID).
+		ColumnExpr("SUM(total_strokes) AS total_strokes, player_id").
+		Where("guild_id = ?", guildID).
+		Where("tournament_id = ?", tournamentID).
+		Group("player_id").
 		Order("total_strokes ASC").
-		Limit(limit).
 		Scan(context.TODO(), &rounds)
 	return rounds
 }
@@ -113,7 +120,8 @@ func getHardestHole(guildID string, tournamentID string) *HardestHoleResponse {
 		NewSelect().
 		Model(hole).
 		ColumnExpr("AVG(strokes) AS strokes, color").
-		Where("inserted_at >= ? AND inserted_at <= ? AND guild_id = ?", start, end, guildID).
+		Where("guild_id = ?", guildID).
+		Where("tournament_id = ?", tournamentID).
 		Group("color").
 		Order("strokes desc").
 		Limit(1).
@@ -122,15 +130,15 @@ func getHardestHole(guildID string, tournamentID string) *HardestHoleResponse {
 	return hole
 }
 
-func mostCommonHole(guildID string, index int, timestamp int64) string {
-	start, end := utils.GetTimeBoundary(timestamp)
-
+func mostCommonHole(guildID string, index int, tournamentID string) string {
 	hole := new(Hole)
 	DB.
 		NewSelect().
 		Model(hole).
 		ColumnExpr("CAST(COUNT(color) as INT) AS strokes, color").
-		Where("inserted_at >= ? AND inserted_at <= ? AND guild_id = ? AND hole_index = ?", start, end, guildID, index).
+		Where("guild_id = ?", guildID).
+		Where("tournament_id = ?", tournamentID).
+		Where("hole_index = ?", index).
 		Group("color").
 		Order("strokes desc").
 		Limit(1).
@@ -138,10 +146,10 @@ func mostCommonHole(guildID string, index int, timestamp int64) string {
 	return hole.Color
 }
 
-func mostCommonFirstHole(guildID string, timestamp int64) string {
-	return mostCommonHole(guildID, 0, timestamp)
+func mostCommonFirstHole(guildID string, tournamentID string) string {
+	return mostCommonHole(guildID, 0, tournamentID)
 }
 
-func mostCommonLastHole(guildID string, timestamp int64) string {
-	return mostCommonHole(guildID, 4, timestamp)
+func mostCommonLastHole(guildID string, tournamentID string) string {
+	return mostCommonHole(guildID, 4, tournamentID)
 }
