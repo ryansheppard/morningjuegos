@@ -3,6 +3,7 @@ package coffeegolf
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/ryansheppard/morningjuegos/internal/utils"
 	"github.com/uptrace/bun"
@@ -12,6 +13,18 @@ var DB *bun.DB
 
 func SetDB(db *bun.DB) {
 	DB = db
+}
+
+func GetActiveTournament() *Tournament {
+	now := time.Now().Unix()
+	tournament := new(Tournament)
+	DB.
+		NewSelect().
+		Model(tournament).
+		Where("start_date <= ? AND end_date >= ?", now, now).
+		Scan(context.TODO())
+
+	return tournament
 }
 
 func (cg *CoffeeGolfRound) Insert() bool {

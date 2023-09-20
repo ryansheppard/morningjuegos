@@ -7,7 +7,9 @@ import (
 type CoffeeGolfRound struct {
 	bun.BaseModel `bun:"table:coffee_golf_round"`
 
-	ID           string `bun:"id,pk"`
+	ID           string     `bun:"id,pk"`
+	Tournament   Tournament `bun:"rel:belongs-to,join:tournament_id=id"`
+	TournamentID string
 	GuildID      string
 	PlayerName   string
 	PlayerID     string
@@ -21,13 +23,15 @@ type CoffeeGolfRound struct {
 type CoffeeGolfHole struct {
 	bun.BaseModel `bun:"table:coffee_golf_hole"`
 
-	ID         string `bun:"id,pk"`
-	GuildID    string
-	RoundID    string
-	Color      string
-	Strokes    int
-	HoleIndex  int
-	InsertedAt int64
+	ID           string     `bun:"id,pk"`
+	Tournament   Tournament `bun:"rel:belongs-to,join:tournament_id=id"`
+	TournamentID string
+	GuildID      string
+	RoundID      string
+	Color        string
+	Strokes      int
+	HoleIndex    int
+	InsertedAt   int64
 }
 
 type HardestHoleResponse struct {
@@ -35,4 +39,20 @@ type HardestHoleResponse struct {
 
 	Strokes float64
 	Color   string
+}
+
+type Tournament struct {
+	bun.BaseModel `bun:"table:coffee_golf_tournament"`
+
+	ID      string `bun:"id,pk"`
+	GuildID string
+	Start   int64
+	End     int64
+}
+
+type TournamentWinner struct {
+	bun.BaseModel `bun:"table:coffee_golf_tournament_winner"`
+	ID            string `bun:"id,pk"`
+	GuildID       string
+	PlayerID      string
 }

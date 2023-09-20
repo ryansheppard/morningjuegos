@@ -31,9 +31,15 @@ func TestMain(m *testing.M) {
 		"now": func() int64 {
 			return time.Now().Unix()
 		},
+		"two_days_ago": func() int64 {
+			return time.Now().Add(-48 * time.Hour).Unix()
+		},
+		"two_days_from_now": func() int64 {
+			return time.Now().Add(48 * time.Hour).Unix()
+		},
 	}
 
-	db.RegisterModel((*CoffeeGolfRound)(nil), (*CoffeeGolfHole)(nil))
+	db.RegisterModel((*CoffeeGolfRound)(nil), (*CoffeeGolfHole)(nil), (*Tournament)(nil), (*TournamentWinner)(nil))
 
 	fixture = dbfixture.New(db, dbfixture.WithRecreateTables(), dbfixture.WithTemplateFuncs(funcMap))
 	if err = fixture.Load(context.TODO(), os.DirFS("testdata"), "fixture.yml"); err != nil {
