@@ -167,3 +167,22 @@ func TestGetActiveTournament(t *testing.T) {
 		t.Error("tournament.ID != a1")
 	}
 }
+
+func TestGetUniqueGuilds(t *testing.T) {
+	t.Parallel()
+	guilds := getAllGuilds()
+
+	if len(guilds) != 2 {
+		t.Error("len(guilds) != 2")
+	}
+}
+
+func TestGetUniquePlayers(t *testing.T) {
+	t.Parallel()
+
+	players := getUniquePlayersInTournament("a1")
+
+	if len(players) != 1 {
+		t.Error("len(players) != 1")
+	}
+}

@@ -72,3 +72,16 @@ type TournamentDailyWinner struct {
 	InsertedAt    int64
 	Strokes       int
 }
+
+// Probably better to have a dedicated guild table
+type UniqueGuildResponse struct {
+	bun.BaseModel `bun:"table:coffee_golf_tournament"`
+
+	GuildID string
+}
+
+type UniquePlayerResponse struct {
+	bun.BaseModel `bun:"table:coffee_golf_round"`
+
+	PlayerID string
+}

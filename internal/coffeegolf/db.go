@@ -19,6 +19,51 @@ func SetDB(db *bun.DB) {
 	DB = db
 }
 
+func getAllGuilds() []string {
+	var guilds []UniqueGuildResponse
+
+	err := DB.
+		NewSelect().
+		Model(&guilds).
+		ColumnExpr("DISTINCT guild_id").
+		Scan(context.TODO())
+
+	if err != nil {
+		panic(err)
+	}
+
+	guildIDs := []string{}
+
+	for _, guild := range guilds {
+		guildIDs = append(guildIDs, guild.GuildID)
+	}
+
+	return guildIDs
+}
+
+func getUniquePlayersInTournament(tournamentID string) []string {
+	var players []UniquePlayerResponse
+
+	err := DB.
+		NewSelect().
+		Model(&players).
+		ColumnExpr("DISTINCT player_id").
+		Where("tournament_id = ?", tournamentID).
+		Scan(context.TODO())
+
+	if err != nil {
+		panic(err)
+	}
+
+	playerIDs := []string{}
+
+	for _, player := range players {
+		playerIDs = append(playerIDs, player.PlayerID)
+	}
+
+	return playerIDs
+}
+
 func getActiveTournament(guildID string, create bool) *Tournament {
 	now := time.Now().Unix()
 	tournament := new(Tournament)
@@ -39,6 +84,23 @@ func getActiveTournament(guildID string, create bool) *Tournament {
 	}
 
 	return tournament
+}
+
+func checkIfPlayerHasRound(playerID string, tournamentID string, date int64) bool {
+	exists, err := DB.
+		NewSelect().
+		Model((*Round)(nil)).
+		Where("player_id = ?", playerID).
+		Where("inserted_at >= ?", date).
+		Where("inserted_at <= ?", date+86400).
+		Where("tournament_id = ?", tournamentID).
+		Exists(context.TODO())
+
+	if err != nil {
+		panic(err)
+	}
+
+	return exists
 }
 
 func createTournament(guildID string, days int) *Tournament {
@@ -69,7 +131,10 @@ func (cg *Round) Insert() bool {
 	exists, err := DB.
 		NewSelect().
 		Model((*Round)(nil)).
-		Where("player_id = ? AND guild_id = ? AND inserted_at >= ? AND inserted_at <= ?", cg.PlayerID, cg.GuildID, start, end).
+		Where("player_id = ?", cg.PlayerID).
+		Where("guild_id = ?", cg.GuildID).
+		Where("inserted_at >= ?", start).
+		Where("inserted_at <= ?", end).
 		Exists(context.TODO())
 
 	if err != nil {
@@ -88,12 +153,14 @@ func (cg *Round) Insert() bool {
 		panic(err)
 	}
 
-	_, err = DB.
-		NewInsert().
-		Model(&cg.Holes).
-		Exec(context.TODO())
-	if err != nil {
-		panic(err)
+	if len(cg.Holes) > 0 {
+		_, err = DB.
+			NewInsert().
+			Model(&cg.Holes).
+			Exec(context.TODO())
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return true

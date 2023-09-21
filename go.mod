@@ -4,6 +4,7 @@ go 1.21.0
 
 require (
 	github.com/bwmarrin/discordgo v0.27.1
+	github.com/go-co-op/gocron v1.34.0
 	github.com/google/uuid v1.3.1
 	github.com/spf13/cobra v1.7.0
 	github.com/uptrace/bun v1.1.16
@@ -24,10 +25,12 @@ require (
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect

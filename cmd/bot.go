@@ -5,7 +5,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
 
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf"
@@ -27,6 +29,9 @@ var botCmd = &cobra.Command{
 		for _, game := range games {
 			d.RegisterGame(game)
 		}
+		s := gocron.NewScheduler(time.UTC)
+		s.Every(1).Day().At("01:00").Do(coffeegolf.AddMissingRounds)
+		s.StartAsync()
 
 		fmt.Println("MorningJuegos is now running. Press CTRL-C to exit.")
 		sc := make(chan os.Signal, 1)
