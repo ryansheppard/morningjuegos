@@ -2,6 +2,7 @@ package coffeegolf
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +14,8 @@ const defaultTournamentDays = 10
 
 // DB is the database connection
 var DB *bun.DB
+
+var mutex = &sync.Mutex{}
 
 // SetDB sets the DB variable
 func SetDB(db *bun.DB) {
@@ -127,6 +130,9 @@ func createTournament(guildID string, days int) *Tournament {
 
 // Insert inserts a round into the database
 func (cg *Round) Insert() bool {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	start, end := utils.GetTimeBoundary(cg.InsertedAt)
 	exists, err := DB.
 		NewSelect().
@@ -143,6 +149,13 @@ func (cg *Round) Insert() bool {
 
 	if exists {
 		return false
+	}
+
+	uniquePlyrs := getUniquePlayersInTournament(cg.TournamentID)
+	hasPlayed := slices.ContainsString(uniquePlyrs, cg.PlayerID)
+
+	if !hasPlayed {
+		go AddMissingRounds()
 	}
 
 	_, err = DB.
