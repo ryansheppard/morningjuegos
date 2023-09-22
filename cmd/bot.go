@@ -30,7 +30,7 @@ var botCmd = &cobra.Command{
 			d.RegisterGame(game)
 		}
 		s := gocron.NewScheduler(time.UTC)
-		s.Every(1).Day().At("01:00").Do(coffeegolf.AddMissingRounds)
+		s.Every(1).Minute().Do(coffeegolf.AddMissingRounds)
 		s.StartAsync()
 
 		fmt.Println("MorningJuegos is now running. Press CTRL-C to exit.")
