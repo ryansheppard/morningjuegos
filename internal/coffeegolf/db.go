@@ -2,6 +2,7 @@ package coffeegolf
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"time"
 
@@ -152,7 +153,7 @@ func (cg *Round) Insert() bool {
 	}
 
 	uniquePlyrs := getUniquePlayersInTournament(cg.TournamentID)
-	hasPlayed := slices.ContainsString(uniquePlyrs, cg.PlayerID)
+	hasPlayed := slices.Contains(uniquePlyrs, cg.PlayerID)
 
 	if !hasPlayed {
 		go AddMissingRounds()
