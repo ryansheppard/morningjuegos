@@ -2,7 +2,7 @@ package utils
 
 import "testing"
 
-func TestGetTimeBounday(t *testing.T) {
+func TestGetTimeBoundary(t *testing.T) {
 	t.Parallel()
 
 	start, end := GetTimeBoundary(1695170605)
