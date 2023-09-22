@@ -37,16 +37,6 @@
       inserted_at: '{{ now }}'
       total_strokes: 12
       percentage: 50%
-    - _id: "worst"
-      id: "worst"
-      guild_id: "bad"
-      tournament_id: "{{ $.Tournament.a3.ID }}"
-      player_name: "worst2"
-      player_id: "worst1"
-      original_date: "Sept 16"
-      inserted_at: '{{ now }}'
-      total_strokes: 19
-      percentage: 50%
     - _id: "notworst"
       id: "notworst"
       guild_id: "bad"
@@ -56,6 +46,16 @@
       original_date: ""
       inserted_at: '{{ now }}'
       total_strokes: 20
+      percentage: 50%
+    - _id: "worst"
+      id: "worst"
+      guild_id: "bad"
+      tournament_id: "{{ $.Tournament.a3.ID }}"
+      player_name: "worst2"
+      player_id: "worst1"
+      original_date: "Sept 16"
+      inserted_at: '{{ now }}'
+      total_strokes: 19
       percentage: 50%
 - model: Hole
   rows:

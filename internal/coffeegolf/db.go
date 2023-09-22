@@ -245,6 +245,7 @@ func getWorstRound(guildID string, tournamentID string) *Round {
 		Where("guild_id = ?", guildID).
 		Where("tournament_id = ?", tournamentID).
 		Where("original_date != ''").
+		Order("total_strokes desc").
 		Limit(1).
 		Scan(context.TODO(), round)
 

@@ -40,7 +40,7 @@ func generateLeaderboard(guildID string) string {
 		}
 	}
 
-	leaderString := "Leaders\n" + strings.Join(leaderStrings, "\n")
+	leaderString := "Leaders\n" + strings.Join(leaderStrings, "\n") + "\n"
 
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(notYetPlayed), func(i, j int) { notYetPlayed[i], notYetPlayed[j] = notYetPlayed[j], notYetPlayed[i] })
