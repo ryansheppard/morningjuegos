@@ -181,7 +181,7 @@ func (cg *Round) Insert() bool {
 }
 
 // TODO: need to return winner by strokes and by daily wins
-func getStrokeLeaders(guildID string, tournamentID string) []Round {
+func getStrokeLeaders(guildID string, tournamentID string, start int64, end int64) []Round {
 	var rounds []Round
 	DB.
 		NewSelect().
@@ -189,6 +189,8 @@ func getStrokeLeaders(guildID string, tournamentID string) []Round {
 		ColumnExpr("SUM(total_strokes) AS total_strokes, player_id").
 		Where("guild_id = ?", guildID).
 		Where("tournament_id = ?", tournamentID).
+		Where("inserted_at >= ?", start).
+		Where("inserted_at <= ?", end).
 		Group("player_id").
 		Order("total_strokes ASC").
 		Scan(context.TODO(), &rounds)
