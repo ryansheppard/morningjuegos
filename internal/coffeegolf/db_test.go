@@ -172,8 +172,8 @@ func TestGetUniqueGuilds(t *testing.T) {
 	t.Parallel()
 	guilds := getAllGuilds()
 
-	if len(guilds) != 2 {
-		t.Error("len(guilds) != 2")
+	if len(guilds) != 3 {
+		t.Error("len(guilds) != 3")
 	}
 }
 
@@ -184,5 +184,15 @@ func TestGetUniquePlayers(t *testing.T) {
 
 	if len(players) != 1 {
 		t.Error("len(players) != 1")
+	}
+}
+
+func TestGetWorstRound(t *testing.T) {
+	t.Parallel()
+
+	worstRound := getWorstRound("bad", "a3")
+
+	if worstRound.ID != "worst" {
+		t.Error("worstRound.ID != worst")
 	}
 }

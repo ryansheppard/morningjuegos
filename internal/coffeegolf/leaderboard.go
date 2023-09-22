@@ -31,13 +31,16 @@ func generateLeaderboard(guildID string) string {
 	leaderString := "Leaders\n" + strings.Join(leaderStrings, "\n")
 
 	hole := getHardestHole(guildID, tournament.ID)
-	holeString := fmt.Sprintf("The hardest hole was %s and took an average of %0.2f strokes\n", hole.Color, hole.Strokes)
+	holeString := fmt.Sprintf("The hardest hole was %s and took an average of %0.2f strokes", hole.Color, hole.Strokes)
 
 	firstMost := mostCommonFirstHole(guildID, tournament.ID)
 	lastMost := mostCommonLastHole(guildID, tournament.ID)
 	mostCommonString := fmt.Sprintf("The most common first hole was %s and the last was %s", firstMost, lastMost)
 
-	statsStr := "\n" + "Stats powered by AWS Next Gen Stats" + "\n" + holeString + "\n" + mostCommonString
+	worstRound := getWorstRound(guildID, tournament.ID)
+	worstRoundString := fmt.Sprintf("The worst round was %d strokes by <@%s>", worstRound.TotalStrokes, worstRound.PlayerID)
+
+	statsStr := "\n" + "Stats powered by AWS Next Gen Stats" + "\n" + holeString + "\n" + mostCommonString + "\n" + worstRoundString
 
 	all := tournamentString + "\n\n" + leaderString + "\n" + statsStr
 

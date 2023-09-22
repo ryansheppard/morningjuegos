@@ -10,6 +10,11 @@
       guild_id: "5678"
       start: '{{ two_days_ago }}'
       end: '{{ two_days_from_now }}'
+    - _id: "a3"
+      id: "a3"
+      guild_id: "bad"
+      start: '{{ two_days_ago }}'
+      end: '{{ two_days_from_now }}'
 - model: Round
   rows:
     - _id: "abc123"
@@ -31,6 +36,26 @@
       original_date: "Sept 16"
       inserted_at: '{{ now }}'
       total_strokes: 12
+      percentage: 50%
+    - _id: "worst"
+      id: "worst"
+      guild_id: "bad"
+      tournament_id: "{{ $.Tournament.a3.ID }}"
+      player_name: "worst2"
+      player_id: "worst1"
+      original_date: "Sept 16"
+      inserted_at: '{{ now }}'
+      total_strokes: 19
+      percentage: 50%
+    - _id: "notworst"
+      id: "notworst"
+      guild_id: "bad"
+      tournament_id: "{{ $.Tournament.a3.ID }}"
+      player_name: "worst3"
+      player_id: "worst4"
+      original_date: ""
+      inserted_at: '{{ now }}'
+      total_strokes: 20
       percentage: 50%
 - model: Hole
   rows:

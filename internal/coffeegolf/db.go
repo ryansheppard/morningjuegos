@@ -220,3 +220,17 @@ func mostCommonFirstHole(guildID string, tournamentID string) string {
 func mostCommonLastHole(guildID string, tournamentID string) string {
 	return mostCommonHole(guildID, 4, tournamentID)
 }
+
+func getWorstRound(guildID string, tournamentID string) *Round {
+	round := new(Round)
+	DB.
+		NewSelect().
+		Model(round).
+		Where("guild_id = ?", guildID).
+		Where("tournament_id = ?", tournamentID).
+		Where("original_date != ''").
+		Limit(1).
+		Scan(context.TODO(), round)
+
+	return round
+}
