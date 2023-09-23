@@ -81,7 +81,7 @@ func getActiveTournament(guildID string, create bool) *Tournament {
 
 	if err != nil || tournament == nil {
 		if !create {
-			panic(err)
+			return nil
 		}
 
 		tournament = createTournament(guildID, defaultTournamentDays)

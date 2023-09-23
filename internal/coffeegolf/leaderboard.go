@@ -42,10 +42,13 @@ func generateLeaderboard(guildID string) string {
 
 	leaderString := "Leaders\n" + strings.Join(leaderStrings, "\n") + "\n"
 
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(notYetPlayed), func(i, j int) { notYetPlayed[i], notYetPlayed[j] = notYetPlayed[j], notYetPlayed[i] })
+	notYetPlayedString := ""
+	if len(notYetPlayed) > 0 {
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(notYetPlayed), func(i, j int) { notYetPlayed[i], notYetPlayed[j] = notYetPlayed[j], notYetPlayed[i] })
 
-	notYetPlayedString := "Not Played Yet\n" + strings.Join(notYetPlayed, "\n")
+		notYetPlayedString = "Not Played Yet\n" + strings.Join(notYetPlayed, "\n")
+	}
 
 	hole := getHardestHole(guildID, tournament.ID)
 	holeString := fmt.Sprintf("The hardest hole was %s and took an average of %0.2f strokes", hole.Color, hole.Strokes)
