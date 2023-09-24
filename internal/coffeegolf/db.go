@@ -7,26 +7,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryansheppard/morningjuegos/internal/database"
 	"github.com/ryansheppard/morningjuegos/internal/utils"
-	"github.com/uptrace/bun"
 )
 
 const defaultTournamentDays = 10
 
-// DB is the database connection
-var DB *bun.DB
-
 var mutex = &sync.Mutex{}
-
-// SetDB sets the DB variable
-func SetDB(db *bun.DB) {
-	DB = db
-}
 
 func getAllGuilds() []string {
 	var guilds []UniqueGuildResponse
 
-	err := DB.
+	err := database.GetDB().
 		NewSelect().
 		Model(&guilds).
 		ColumnExpr("DISTINCT guild_id").
@@ -48,7 +40,7 @@ func getAllGuilds() []string {
 func getUniquePlayersInTournament(tournamentID string) []string {
 	var players []UniquePlayerResponse
 
-	err := DB.
+	err := database.GetDB().
 		NewSelect().
 		Model(&players).
 		ColumnExpr("DISTINCT player_id").
@@ -71,7 +63,7 @@ func getUniquePlayersInTournament(tournamentID string) []string {
 func getActiveTournament(guildID string, create bool) *Tournament {
 	now := time.Now().Unix()
 	tournament := new(Tournament)
-	err := DB.
+	err := database.GetDB().
 		NewSelect().
 		Model(tournament).
 		Where("start <= ?", now).
@@ -95,7 +87,7 @@ func getInactiveTournaments(guildID string) []*Tournament {
 
 	var tournaments []*Tournament
 
-	err := DB.
+	err := database.GetDB().
 		NewSelect().
 		Model((*Tournament)(nil)).
 		Where("end < ?", now).
@@ -112,7 +104,7 @@ func getInactiveTournaments(guildID string) []*Tournament {
 func getTournamentWinner(tournamentID string) *TournamentWinner {
 	winner := new(TournamentWinner)
 
-	err := DB.
+	err := database.GetDB().
 		NewSelect().
 		Model(winner).
 		Where("tournament_id = ?", tournamentID).
@@ -139,7 +131,7 @@ func createTournamentWinner(tournamentID string, guildID string) {
 			Placement:    i + 1,
 		}
 
-		_, err := DB.
+		_, err := database.GetDB().
 			NewInsert().
 			Model(tournamentWinner).
 			Exec(context.TODO())
@@ -151,7 +143,7 @@ func createTournamentWinner(tournamentID string, guildID string) {
 }
 
 func checkIfPlayerHasRound(playerID string, tournamentID string, date int64) bool {
-	exists, err := DB.
+	exists, err := database.GetDB().
 		NewSelect().
 		Model((*Round)(nil)).
 		Where("player_id = ?", playerID).
@@ -179,7 +171,7 @@ func createTournament(guildID string, days int) *Tournament {
 		End:     end,
 	}
 
-	_, err := DB.
+	_, err := database.GetDB().
 		NewInsert().
 		Model(tournament).
 		Exec(context.TODO())
@@ -195,7 +187,7 @@ func (cg *Round) Insert() bool {
 	defer mutex.Unlock()
 
 	start, end := utils.GetTimeBoundary(cg.InsertedAt)
-	exists, err := DB.
+	exists, err := database.GetDB().
 		NewSelect().
 		Model((*Round)(nil)).
 		Where("player_id = ?", cg.PlayerID).
@@ -219,7 +211,7 @@ func (cg *Round) Insert() bool {
 		go AddMissingRounds()
 	}
 
-	_, err = DB.
+	_, err = database.GetDB().
 		NewInsert().
 		Model(cg).
 		Exec(context.TODO())
@@ -228,7 +220,7 @@ func (cg *Round) Insert() bool {
 	}
 
 	if len(cg.Holes) > 0 {
-		_, err = DB.
+		_, err = database.GetDB().
 			NewInsert().
 			Model(&cg.Holes).
 			Exec(context.TODO())
@@ -242,7 +234,7 @@ func (cg *Round) Insert() bool {
 
 func getStrokeLeaders(guildID string, tournamentID string) []Round {
 	var rounds []Round
-	DB.
+	database.GetDB().
 		NewSelect().
 		Model((*Round)(nil)).
 		ColumnExpr("SUM(total_strokes) AS total_strokes, player_id").
@@ -256,7 +248,7 @@ func getStrokeLeaders(guildID string, tournamentID string) []Round {
 
 func getHardestHole(guildID string, tournamentID string) *HardestHoleResponse {
 	hole := new(HardestHoleResponse)
-	DB.
+	database.GetDB().
 		NewSelect().
 		Model(hole).
 		ColumnExpr("AVG(strokes) AS strokes, color").
@@ -272,7 +264,7 @@ func getHardestHole(guildID string, tournamentID string) *HardestHoleResponse {
 
 func mostCommonHole(guildID string, index int, tournamentID string) string {
 	hole := new(Hole)
-	DB.
+	database.GetDB().
 		NewSelect().
 		Model(hole).
 		ColumnExpr("CAST(COUNT(color) as INT) AS strokes, color").
@@ -296,7 +288,7 @@ func mostCommonLastHole(guildID string, tournamentID string) string {
 
 func getWorstRound(guildID string, tournamentID string) *Round {
 	round := new(Round)
-	DB.
+	database.GetDB().
 		NewSelect().
 		Model(round).
 		Where("guild_id = ?", guildID).

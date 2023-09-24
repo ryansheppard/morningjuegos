@@ -3,6 +3,8 @@ package coffeegolf
 import (
 	"context"
 	"testing"
+
+	"github.com/ryansheppard/morningjuegos/internal/database"
 )
 
 func TestAddMissingRounds(t *testing.T) {
@@ -11,7 +13,7 @@ func TestAddMissingRounds(t *testing.T) {
 	AddMissingRounds()
 
 	var rounds []Round
-	err := DB.NewSelect().
+	err := database.GetDB().NewSelect().
 		Model(&rounds).
 		Where("tournament_id = ?", "a1").
 		Scan(context.Background())

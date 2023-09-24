@@ -4,34 +4,24 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/uptrace/bun"
+	"github.com/ryansheppard/morningjuegos/internal/database"
 	"github.com/uptrace/bun/migrate"
 )
 
 var Migrations = migrate.NewMigrations()
 
-var DB *bun.DB
-
 var migrator *migrate.Migrator
 
-func SetDB(db *bun.DB) {
-	DB = db
-}
-
-// func init() {
-// 	if err := Migrations.DiscoverCaller(); err != nil {
-// 		panic(err)
-// 	}
-// }
-
 func InitMigrations() {
-	migrator = migrate.NewMigrator(DB, Migrations)
+	db := database.GetDB()
+	migrator = migrate.NewMigrator(db, Migrations)
 	fmt.Println(migrator)
 	migrator.Init(context.TODO())
 }
 
 func RunMigrations() error {
-	migrator = migrate.NewMigrator(DB, Migrations)
+	db := database.GetDB()
+	migrator = migrate.NewMigrator(db, Migrations)
 	if err := migrator.Lock(context.TODO()); err != nil {
 		return err
 	}
@@ -51,7 +41,8 @@ func RunMigrations() error {
 }
 
 func CreateMigration(name string) error {
-	migrator := migrate.NewMigrator(DB, Migrations)
+	db := database.GetDB()
+	migrator := migrate.NewMigrator(db, Migrations)
 	mf, err := migrator.CreateGoMigration(context.TODO(), name)
 	if err != nil {
 		return err

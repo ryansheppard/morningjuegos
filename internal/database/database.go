@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 
 	"github.com/uptrace/bun"
@@ -10,11 +11,12 @@ import (
 	"github.com/uptrace/bun/extra/bundebug"
 )
 
-func GetDB() *bun.DB {
-	dbPath := os.Getenv("DB_PATH")
+var Connection *bun.DB
+
+func CreateConnection(dbPath string) error {
 	sqldb, err := sql.Open(sqliteshim.ShimName, dbPath)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	db := bun.NewDB(sqldb, sqlitedialect.New(), bun.WithDiscardUnknownColumns())
@@ -22,5 +24,16 @@ func GetDB() *bun.DB {
 		bundebug.WithEnabled(false),
 		bundebug.FromEnv("BUNDEBUG"),
 	))
-	return db
+
+	Connection = db
+	return nil
+}
+
+func GetDB() *bun.DB {
+	if Connection == nil {
+		fmt.Println("No DB connection created")
+		os.Exit(1)
+	}
+
+	return Connection
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf"
-	"github.com/ryansheppard/morningjuegos/internal/database"
 	"github.com/ryansheppard/morningjuegos/internal/discord"
 	"github.com/ryansheppard/morningjuegos/internal/game"
 )
@@ -24,8 +23,6 @@ var botCmd = &cobra.Command{
 		token := os.Getenv("DISCORD_TOKEN")
 		appID := os.Getenv("DISCORD_APP_ID")
 		d := discord.NewDiscord(token, appID)
-
-		coffeegolf.SetDB(database.GetDB())
 
 		games := []*game.Game{coffeegolf.GetCoffeeGolfGame()}
 
