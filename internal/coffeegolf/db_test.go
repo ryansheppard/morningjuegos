@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 func TestGetStrokeLeaders(t *testing.T) {
 	t.Parallel()
 
-	leaders := getStrokeLeaders("1234", "a1", 100)
+	leaders := getStrokeLeaders("1234", "a1")
 
 	if len(leaders) != 1 {
 		t.Error("len(leaders) != 1")
@@ -62,7 +62,7 @@ func TestGetStrokeLeaders(t *testing.T) {
 func TestGetStrokeLeadersEmpty(t *testing.T) {
 	t.Parallel()
 
-	leaders := getStrokeLeaders("12354", "a1", 100)
+	leaders := getStrokeLeaders("12354", "a1")
 
 	if len(leaders) != 0 {
 		t.Error("len(leaders) != 0")

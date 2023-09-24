@@ -126,7 +126,7 @@ func getTournamentWinner(tournamentID string) *TournamentWinner {
 }
 
 func createTournamentWinner(tournamentID string, guildID string) {
-	winners := getStrokeLeaders(tournamentID, guildID, 3)
+	winners := getStrokeLeaders(tournamentID, guildID)
 
 	for i, winner := range winners {
 		tournamentWinner := TournamentWinner{
@@ -240,7 +240,7 @@ func (cg *Round) Insert() bool {
 	return true
 }
 
-func getStrokeLeaders(guildID string, tournamentID string, limit int) []Round {
+func getStrokeLeaders(guildID string, tournamentID string) []Round {
 	var rounds []Round
 	DB.
 		NewSelect().
@@ -250,7 +250,6 @@ func getStrokeLeaders(guildID string, tournamentID string, limit int) []Round {
 		Where("tournament_id = ?", tournamentID).
 		Group("player_id").
 		Order("total_strokes ASC").
-		Limit(limit).
 		Scan(context.TODO(), &rounds)
 	return rounds
 }
