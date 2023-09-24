@@ -59,18 +59,12 @@ type TournamentWinner struct {
 	bun.BaseModel `bun:"table:coffee_golf_tournament_winner"`
 	ID            string `bun:"id,pk"`
 	GuildID       string
+	Tournament    Tournament `bun:"rel:belongs-to,join:tournament_id=id"`
+	TournamentID  string
 	PlayerID      string
 	InsertedAt    int64
 	Strokes       int
-}
-
-type TournamentDailyWinner struct {
-	bun.BaseModel `bun:"table:coffee_golf_tournament_winner"`
-	ID            string `bun:"id,pk"`
-	GuildID       string
-	PlayerID      string
-	InsertedAt    int64
-	Strokes       int
+	Placement     int
 }
 
 // Probably better to have a dedicated guild table

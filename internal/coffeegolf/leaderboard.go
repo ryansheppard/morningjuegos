@@ -21,7 +21,7 @@ func generateLeaderboard(guildID string) string {
 
 	tournamentString := fmt.Sprintf("Current Tournament: %s - %s", startDate, endDate)
 
-	strokeLeaders := getStrokeLeaders(guildID, tournament.ID, tournament.Start, tournament.End)
+	strokeLeaders := getStrokeLeaders(guildID, tournament.ID, 100)
 	if len(strokeLeaders) == 0 {
 		return "No one has played yet!"
 	}

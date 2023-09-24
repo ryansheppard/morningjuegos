@@ -90,6 +90,66 @@ func getActiveTournament(guildID string, create bool) *Tournament {
 	return tournament
 }
 
+func getInactiveTournaments(guildID string) []*Tournament {
+	now := time.Now().Unix()
+
+	var tournaments []*Tournament
+
+	err := DB.
+		NewSelect().
+		Model((*Tournament)(nil)).
+		Where("end < ?", now).
+		Where("guild_id = ?", guildID).
+		Scan(context.TODO(), &tournaments)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return tournaments
+}
+
+func getTournamentWinner(tournamentID string) *TournamentWinner {
+	winner := new(TournamentWinner)
+
+	err := DB.
+		NewSelect().
+		Model(winner).
+		Where("tournament_id = ?", tournamentID).
+		Scan(context.TODO())
+
+	if err != nil {
+		panic(err)
+	}
+
+	return winner
+}
+
+func createTournamentWinner(tournamentID string, guildID string) {
+	winners := getStrokeLeaders(tournamentID, guildID, 3)
+
+	for i, winner := range winners {
+		tournamentWinner := TournamentWinner{
+			ID:           uuid.NewString(),
+			GuildID:      guildID,
+			TournamentID: tournamentID,
+			PlayerID:     winner.PlayerID,
+			InsertedAt:   time.Now().Unix(),
+			Strokes:      winner.TotalStrokes,
+			Placement:    i + 1,
+		}
+
+		_, err := DB.
+			NewInsert().
+			Model(tournamentWinner).
+			Exec(context.TODO())
+
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 func checkIfPlayerHasRound(playerID string, tournamentID string, date int64) bool {
 	exists, err := DB.
 		NewSelect().
@@ -180,8 +240,7 @@ func (cg *Round) Insert() bool {
 	return true
 }
 
-// TODO: need to return winner by strokes and by daily wins
-func getStrokeLeaders(guildID string, tournamentID string, start int64, end int64) []Round {
+func getStrokeLeaders(guildID string, tournamentID string, limit int) []Round {
 	var rounds []Round
 	DB.
 		NewSelect().
@@ -189,10 +248,9 @@ func getStrokeLeaders(guildID string, tournamentID string, start int64, end int6
 		ColumnExpr("SUM(total_strokes) AS total_strokes, player_id").
 		Where("guild_id = ?", guildID).
 		Where("tournament_id = ?", tournamentID).
-		Where("inserted_at >= ?", start).
-		Where("inserted_at <= ?", end).
 		Group("player_id").
 		Order("total_strokes ASC").
+		Limit(limit).
 		Scan(context.TODO(), &rounds)
 	return rounds
 }

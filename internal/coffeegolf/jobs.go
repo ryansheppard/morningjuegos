@@ -54,3 +54,22 @@ func AddMissingRounds() {
 		}
 	}
 }
+
+func AddTournamentWinners() {
+	guilds := getAllGuilds()
+
+	var inactiveTournaments []*Tournament
+	for _, guild := range guilds {
+		tournaments := getInactiveTournaments(guild)
+		if len(tournaments) > 0 {
+			inactiveTournaments = append(inactiveTournaments, tournaments...)
+		}
+	}
+
+	for _, tournament := range inactiveTournaments {
+		winner := getTournamentWinner(tournament.ID)
+		if winner == nil {
+			createTournamentWinner(tournament.ID, tournament.GuildID)
+		}
+	}
+}
