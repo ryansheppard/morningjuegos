@@ -101,13 +101,30 @@ func getInactiveTournaments(guildID string) []*Tournament {
 	return tournaments
 }
 
-func getTournamentWinner(tournamentID string) *TournamentWinner {
+func getTournamentPlacements(tournamentID string) []*TournamentWinner {
+	var winners []*TournamentWinner
+
+	err := database.GetDB().
+		NewSelect().
+		Model((*TournamentWinner)(nil)).
+		Where("tournament_id = ?", tournamentID).
+		Scan(context.TODO(), winners)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return winners
+}
+
+func getTournamentPlacement(tournamentID string, playerID string) *TournamentWinner {
 	winner := new(TournamentWinner)
 
 	err := database.GetDB().
 		NewSelect().
 		Model(winner).
 		Where("tournament_id = ?", tournamentID).
+		Where("player_id = ?", playerID).
 		Scan(context.TODO())
 
 	if err != nil {
@@ -117,27 +134,30 @@ func getTournamentWinner(tournamentID string) *TournamentWinner {
 	return winner
 }
 
-func createTournamentWinner(tournamentID string, guildID string) {
+func createTournamentPlacements(tournamentID string, guildID string) {
 	winners := getStrokeLeaders(tournamentID, guildID)
 
 	for i, winner := range winners {
-		tournamentWinner := TournamentWinner{
-			ID:           uuid.NewString(),
-			GuildID:      guildID,
-			TournamentID: tournamentID,
-			PlayerID:     winner.PlayerID,
-			InsertedAt:   time.Now().Unix(),
-			Strokes:      winner.TotalStrokes,
-			Placement:    i + 1,
-		}
+		exists := getTournamentPlacement(tournamentID, winner.PlayerID)
+		if exists == nil {
+			tournamentWinner := TournamentWinner{
+				ID:           uuid.NewString(),
+				GuildID:      guildID,
+				TournamentID: tournamentID,
+				PlayerID:     winner.PlayerID,
+				InsertedAt:   time.Now().Unix(),
+				Strokes:      winner.TotalStrokes,
+				Placement:    i + 1,
+			}
 
-		_, err := database.GetDB().
-			NewInsert().
-			Model(tournamentWinner).
-			Exec(context.TODO())
+			_, err := database.GetDB().
+				NewInsert().
+				Model(tournamentWinner).
+				Exec(context.TODO())
 
-		if err != nil {
-			panic(err)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 }

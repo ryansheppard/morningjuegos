@@ -67,9 +67,11 @@ func AddTournamentWinners() {
 	}
 
 	for _, tournament := range inactiveTournaments {
-		winner := getTournamentWinner(tournament.ID)
-		if winner == nil {
-			createTournamentWinner(tournament.ID, tournament.GuildID)
+		uniquePlayers := getUniquePlayersInTournament(tournament.ID)
+		placements := getTournamentPlacements(tournament.ID)
+
+		if len(uniquePlayers) != len(placements) {
+			createTournamentPlacements(tournament.ID, tournament.GuildID)
 		}
 	}
 }
