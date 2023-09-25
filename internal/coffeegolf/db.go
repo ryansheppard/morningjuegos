@@ -1,7 +1,6 @@
 package coffeegolf
 
 import (
-	"context"
 	"slices"
 	"sync"
 	"time"
@@ -22,7 +21,7 @@ func getAllGuilds() []string {
 		NewSelect().
 		Model(&guilds).
 		ColumnExpr("DISTINCT guild_id").
-		Scan(context.TODO())
+		Scan(database.GetContext())
 
 	if err != nil {
 		panic(err)
@@ -45,7 +44,7 @@ func getUniquePlayersInTournament(tournamentID string) []string {
 		Model(&players).
 		ColumnExpr("DISTINCT player_id").
 		Where("tournament_id = ?", tournamentID).
-		Scan(context.TODO())
+		Scan(database.GetContext())
 
 	if err != nil {
 		panic(err)
@@ -69,7 +68,7 @@ func getActiveTournament(guildID string, create bool) *Tournament {
 		Where("start <= ?", now).
 		Where("end >= ?", now).
 		Where("guild_id = ?", guildID).
-		Scan(context.TODO())
+		Scan(database.GetContext())
 
 	if err != nil || tournament == nil {
 		if !create {
@@ -92,7 +91,7 @@ func getInactiveTournaments(guildID string) []*Tournament {
 		Model((*Tournament)(nil)).
 		Where("end < ?", now).
 		Where("guild_id = ?", guildID).
-		Scan(context.TODO(), &tournaments)
+		Scan(database.GetContext(), &tournaments)
 
 	if err != nil {
 		panic(err)
@@ -108,7 +107,7 @@ func getTournamentPlacements(tournamentID string) []*TournamentWinner {
 		NewSelect().
 		Model((*TournamentWinner)(nil)).
 		Where("tournament_id = ?", tournamentID).
-		Scan(context.TODO(), winners)
+		Scan(database.GetContext(), winners)
 
 	if err != nil {
 		panic(err)
@@ -125,7 +124,7 @@ func getTournamentPlacement(tournamentID string, playerID string) *TournamentWin
 		Model(winner).
 		Where("tournament_id = ?", tournamentID).
 		Where("player_id = ?", playerID).
-		Scan(context.TODO())
+		Scan(database.GetContext())
 
 	if err != nil {
 		panic(err)
@@ -153,7 +152,7 @@ func createTournamentPlacements(tournamentID string, guildID string) {
 			_, err := database.GetDB().
 				NewInsert().
 				Model(tournamentWinner).
-				Exec(context.TODO())
+				Exec(database.GetContext())
 
 			if err != nil {
 				panic(err)
@@ -170,7 +169,7 @@ func checkIfPlayerHasRound(playerID string, tournamentID string, date int64) boo
 		Where("inserted_at >= ?", date).
 		Where("inserted_at <= ?", date+86400).
 		Where("tournament_id = ?", tournamentID).
-		Exists(context.TODO())
+		Exists(database.GetContext())
 
 	if err != nil {
 		panic(err)
@@ -194,7 +193,7 @@ func createTournament(guildID string, days int) *Tournament {
 	_, err := database.GetDB().
 		NewInsert().
 		Model(tournament).
-		Exec(context.TODO())
+		Exec(database.GetContext())
 	if err != nil {
 		panic(err)
 	}
@@ -214,7 +213,7 @@ func (cg *Round) Insert() bool {
 		Where("guild_id = ?", cg.GuildID).
 		Where("inserted_at >= ?", start).
 		Where("inserted_at <= ?", end).
-		Exists(context.TODO())
+		Exists(database.GetContext())
 
 	if err != nil {
 		panic(err)
@@ -234,7 +233,7 @@ func (cg *Round) Insert() bool {
 	_, err = database.GetDB().
 		NewInsert().
 		Model(cg).
-		Exec(context.TODO())
+		Exec(database.GetContext())
 	if err != nil {
 		panic(err)
 	}
@@ -243,7 +242,7 @@ func (cg *Round) Insert() bool {
 		_, err = database.GetDB().
 			NewInsert().
 			Model(&cg.Holes).
-			Exec(context.TODO())
+			Exec(database.GetContext())
 		if err != nil {
 			panic(err)
 		}
@@ -262,7 +261,7 @@ func getStrokeLeaders(guildID string, tournamentID string) []Round {
 		Where("tournament_id = ?", tournamentID).
 		Group("player_id").
 		Order("total_strokes ASC").
-		Scan(context.TODO(), &rounds)
+		Scan(database.GetContext(), &rounds)
 	return rounds
 }
 
@@ -277,7 +276,7 @@ func getHardestHole(guildID string, tournamentID string) *HardestHoleResponse {
 		Group("color").
 		Order("strokes desc").
 		Limit(1).
-		Scan(context.TODO())
+		Scan(database.GetContext())
 
 	return hole
 }
@@ -294,7 +293,7 @@ func mostCommonHole(guildID string, index int, tournamentID string) string {
 		Group("color").
 		Order("strokes desc").
 		Limit(1).
-		Scan(context.TODO())
+		Scan(database.GetContext())
 	return hole.Color
 }
 
@@ -316,7 +315,7 @@ func getWorstRound(guildID string, tournamentID string) *Round {
 		Where("original_date != ''").
 		Order("total_strokes desc").
 		Limit(1).
-		Scan(context.TODO(), round)
+		Scan(database.GetContext(), round)
 
 	return round
 }

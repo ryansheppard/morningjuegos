@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -11,7 +12,9 @@ import (
 	"github.com/uptrace/bun/extra/bundebug"
 )
 
-var Connection *bun.DB
+var connection *bun.DB
+
+var ctx context.Context
 
 func CreateConnection(dbPath string) error {
 	sqldb, err := sql.Open(sqliteshim.ShimName, dbPath)
@@ -25,15 +28,22 @@ func CreateConnection(dbPath string) error {
 		bundebug.FromEnv("BUNDEBUG"),
 	))
 
-	Connection = db
+	connection = db
 	return nil
 }
 
 func GetDB() *bun.DB {
-	if Connection == nil {
+	if connection == nil {
 		fmt.Println("No DB connection created")
 		os.Exit(1)
 	}
 
-	return Connection
+	return connection
+}
+
+func GetContext() context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return ctx
 }
