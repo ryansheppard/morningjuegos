@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryansheppard/morningjuegos/internal/cache"
 	"github.com/ryansheppard/morningjuegos/internal/database"
 	"github.com/ryansheppard/morningjuegos/internal/utils"
 )
@@ -247,6 +248,12 @@ func (cg *Round) Insert() bool {
 			panic(err)
 		}
 	}
+
+	go func() {
+		leaderboardCacheKey := getLeaderboardCacheKey(cg.GuildID)
+		cache.DeleteKey(leaderboardCacheKey)
+		generateLeaderboard(cg.GuildID)
+	}()
 
 	return true
 }

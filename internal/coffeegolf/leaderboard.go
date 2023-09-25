@@ -10,6 +10,10 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/utils"
 )
 
+func getLeaderboardCacheKey(guildID string) string {
+	return fmt.Sprintf("leaderboard:%s", guildID)
+}
+
 func generateLeaderboard(guildID string) string {
 	tournament := getActiveTournament(guildID, false)
 	if tournament == nil {
@@ -17,7 +21,8 @@ func generateLeaderboard(guildID string) string {
 	}
 
 	// TODO: Probably should care about the error
-	cached, _ := cache.GetKey(fmt.Sprintf("leaderboard:%s", guildID))
+	cacheKey := getLeaderboardCacheKey(guildID)
+	cached, _ := cache.GetKey(cacheKey)
 	if cached != nil {
 		return cached.(string)
 	}
@@ -70,7 +75,7 @@ func generateLeaderboard(guildID string) string {
 
 	all := tournamentString + "\n\n" + leaderString + "\n" + notYetPlayedString + "\n" + statsStr
 
-	cache.SetKey(fmt.Sprintf("leaderboard:%s", guildID), all, 3600)
+	cache.SetKey(cacheKey, all, 3600)
 
 	return all
 }

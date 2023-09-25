@@ -49,3 +49,11 @@ func GetKey(key string) (interface{}, error) {
 
 	return result, nil
 }
+
+func DeleteKey(key string) {
+	if cache == nil {
+		return
+	}
+
+	cache.Del(ctx, key)
+}
