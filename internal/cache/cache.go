@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -29,7 +30,9 @@ func SetKey(key string, value interface{}, ttl int) error {
 		return nil
 	}
 
-	return cache.Set(ctx, key, value, ttl).Err()
+	seconds := time.Duration(ttl) * time.Second
+
+	return cache.Set(ctx, key, value, seconds).Err()
 }
 
 func GetKey(key string) (interface{}, error) {

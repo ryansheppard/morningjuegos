@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ryansheppard/morningjuegos/internal/cache"
 	"github.com/ryansheppard/morningjuegos/internal/utils"
 )
 
@@ -14,6 +15,12 @@ func generateLeaderboard(guildID string) string {
 	tournament := getActiveTournament(guildID, false)
 	if tournament == nil {
 		return "No active tournament"
+	}
+
+	// TODO: Probably should care about the error
+	cached, _ := cache.GetKey(fmt.Sprintf("leaderboard:%s", guildID))
+	if cached != nil {
+		return cached.(string)
 	}
 
 	startDate := time.Unix(tournament.Start, 0).Format("Jan 2, 2006")
@@ -63,6 +70,8 @@ func generateLeaderboard(guildID string) string {
 	statsStr := "\n" + "Stats powered by AWS Next Gen Stats" + "\n" + holeString + "\n" + mostCommonString + "\n" + worstRoundString
 
 	all := tournamentString + "\n\n" + leaderString + "\n" + notYetPlayedString + "\n" + statsStr
+
+	cache.SetKey(fmt.Sprintf("leaderboard:%s", guildID), all, 3600)
 
 	return all
 }
