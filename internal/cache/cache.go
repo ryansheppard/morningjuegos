@@ -1,8 +1,14 @@
 package cache
 
-import "github.com/redis/go-redis/v9"
+import (
+	"context"
+
+	"github.com/redis/go-redis/v9"
+)
 
 var cache *redis.Client
+
+var ctx = context.Background()
 
 func New(address string) {
 	if address == "" {
@@ -18,6 +24,25 @@ func New(address string) {
 	}
 }
 
-func Get() *redis.Client {
-	return cache
+func SetKey(key string, value interface{}, ttl int) error {
+	if cache == nil {
+		return nil
+	}
+
+	return cache.Set(ctx, key, value, ttl).Err()
+}
+
+func GetKey(key string) (interface{}, error) {
+	if cache == nil {
+		return nil, nil
+	}
+
+	result, err := cache.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
