@@ -10,7 +10,6 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/utils"
 )
 
-// TODO: refactor to use a struct
 func generateLeaderboard(guildID string) string {
 	tournament := getActiveTournament(guildID, false)
 	if tournament == nil {

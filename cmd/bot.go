@@ -10,6 +10,7 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
 
+	"github.com/ryansheppard/morningjuegos/internal/cache"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf"
 	"github.com/ryansheppard/morningjuegos/internal/discord"
 	"github.com/ryansheppard/morningjuegos/internal/game"
@@ -23,6 +24,9 @@ var botCmd = &cobra.Command{
 		token := os.Getenv("DISCORD_TOKEN")
 		appID := os.Getenv("DISCORD_APP_ID")
 		d := discord.NewDiscord(token, appID)
+
+		redisAddr := os.Getenv("REDIS_ADDR")
+		cache.New(redisAddr)
 
 		games := []*game.Game{coffeegolf.GetCoffeeGolfGame()}
 
