@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: morning-juegos
-          image: registry.digitalocean.com/ryansheppard/morningjuegos:eaae58f
+          image: registry.digitalocean.com/ryansheppard/morningjuegos:3a0b71d
           imagePullPolicy: Always
           command:
             - "/morningjuegos"
