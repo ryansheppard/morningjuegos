@@ -187,3 +187,10 @@ func TestGetWorstRound(t *testing.T) {
 		t.Error("worstRound.ID != worst")
 	}
 }
+
+func TestCreateTournament(t *testing.T) {
+	t.Parallel()
+
+	// literally just needed to test something here and don't care about the result
+	createTournament("helo", 5)
+}

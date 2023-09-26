@@ -3,6 +3,6 @@ all: test build push
 test:
 	go test ./... -v -cover
 build: test
-	docker build . -t ${DOCKER_IMAGE}
+	docker build . -t registry.digitalocean.com/ryansheppard/morningjuegos
 push: build
-	docker push ${DOCKER_IMAGE}
+	docker push registry.digitalocean.com/ryansheppard/morningjuegos

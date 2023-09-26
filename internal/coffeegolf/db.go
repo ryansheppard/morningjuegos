@@ -71,7 +71,8 @@ func getActiveTournament(guildID string, create bool) *Tournament {
 		Where("guild_id = ?", guildID).
 		Scan(database.GetContext())
 
-	if err != nil || tournament == nil {
+		// TODO: handle this better
+	if err != nil {
 		if !create {
 			return nil
 		}
@@ -193,7 +194,7 @@ func createTournament(guildID string, days int) *Tournament {
 
 	_, err := database.GetDB().
 		NewInsert().
-		Model(tournament).
+		Model(&tournament).
 		Exec(database.GetContext())
 	if err != nil {
 		panic(err)
