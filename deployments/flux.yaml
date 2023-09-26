@@ -5,9 +5,11 @@ metadata:
   name: morningjuegos
 spec:
   interval: 5m0s
-  url: https://github.com/ryansheppard/morningjuegos
+  url: ssh://git@github.com/ryansheppard/morningjuegos
   ref:
     branch: main
+  secretRef:
+    name: morningjuegos
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
