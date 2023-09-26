@@ -1,0 +1,41 @@
+version: 2.1
+jobs:
+  build_and_test:
+    docker:
+      - image: cimg/go:1.21.1
+    working_directory: ~/projects/morningjuegos
+    steps:
+      - checkout
+      - run:
+          name: test
+          command: |
+            go test ./... -v -cover
+      - setup_remote_docker
+      - run:
+          name: build
+          command: |
+            export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos:$(git rev-parse --short HEAD)
+            docker build . -t $IMAGE
+      - run:
+          name: push
+          command: |
+            export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos:$(git rev-parse --short HEAD)
+            echo $DOCKER_USER | docker login --username $DOCKER_USER --password-stdin registry.digitalocean.com
+            docker push $IMAGE
+      - run:
+          name: update
+          command: |
+            export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos:$(git rev-parse --short HEAD)
+            yq e -i '.spec.template.spec.containers[0].image = env(IMAGE)' deployments/manifests/deployment.yaml
+            git config --global user.email "ryandsheppard95@gmail.com"
+            git config --global user.name "CircleCI"
+            git add deployments/manifests/deployment.yaml
+            git commit -m 'update [skip ci]'
+            git push origin main
+
+workflows:
+  build_and_test:
+    jobs:
+      - build_and_test:
+          context:
+            - DIGITAL_OCEAN
