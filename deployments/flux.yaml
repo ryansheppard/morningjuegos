@@ -4,7 +4,7 @@ kind: GitRepository
 metadata:
   name: morningjuegos
 spec:
-  interval: 5m0s
+  interval: 1m
   url: ssh://git@github.com/ryansheppard/morningjuegos
   ref:
     branch: main
@@ -16,7 +16,7 @@ kind: Kustomization
 metadata:
   name: morningjuegos
 spec:
-  interval: 5m
+  interval: 1m
   targetNamespace: default
   sourceRef:
     kind: GitRepository
@@ -24,3 +24,48 @@ spec:
   path: "./deployments/manifests"
   prune: true
   timeout: 1m
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: morningjuegos
+spec:
+  image: registry.digitalocean.com/ryansheppard/morningjuegos
+  interval: 1m
+  secretRef:
+    name: ryansheppard
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: morningjuegos
+spec:
+  imageRepositoryRef:
+    name: morningjuegos
+  policy:
+    numerical:
+      order: desc
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImageUpdateAutomation
+metadata:
+  name: morningjuegos
+spec:
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: morningjuegos
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: '{{range .Updated.Images}}{{println .}}{{end}} [skip ci]'
+    push:
+      branch: main
+  update:
+    path: ./deployments/manifests
+    strategy: Setters

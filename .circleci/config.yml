@@ -14,24 +14,14 @@ jobs:
       - run:
           name: build
           command: |
-            export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos:$(git rev-parse --short HEAD)
+            export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos:$CIRCLE_BUILD_NUM
             docker build . -t $IMAGE
       - run:
           name: push
           command: |
-            export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos:$(git rev-parse --short HEAD)
+            export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos:$CIRCLE_BUILD_NUM
             echo $DOCKER_USER | docker login --username $DOCKER_USER --password-stdin registry.digitalocean.com
             docker push $IMAGE
-      - run:
-          name: update
-          command: |
-            export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos:$(git rev-parse --short HEAD)
-            yq e -i '.spec.template.spec.containers[0].image = env(IMAGE)' deployments/manifests/deployment.yaml
-            git config --global user.email "ryandsheppard95@gmail.com"
-            git config --global user.name "CircleCI"
-            git add deployments/manifests/deployment.yaml
-            git commit -m 'update [skip ci]'
-            git push origin main
 
 workflows:
   build_and_test:
