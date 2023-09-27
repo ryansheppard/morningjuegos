@@ -18,6 +18,9 @@ var handlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCre
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Content: generateLeaderboard(i.GuildID),
+				AllowedMentions: &discordgo.MessageAllowedMentions{
+					Parse: []discordgo.AllowedMentionType{},
+				},
 			},
 		})
 	},
