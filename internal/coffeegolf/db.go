@@ -1,28 +1,39 @@
 package coffeegolf
 
 import (
-	"slices"
+	"context"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ryansheppard/morningjuegos/internal/cache"
-	"github.com/ryansheppard/morningjuegos/internal/database"
 	"github.com/ryansheppard/morningjuegos/internal/utils"
+	"github.com/uptrace/bun"
 )
 
 const defaultTournamentDays = 10
 
 var mutex = &sync.Mutex{}
 
-func getAllGuilds() []string {
+type Query struct {
+	ctx context.Context
+	db  *bun.DB
+}
+
+func NewQuery(ctx context.Context, db *bun.DB) *Query {
+	return &Query{
+		ctx: ctx,
+		db:  db,
+	}
+}
+
+func (q *Query) getAllGuilds() []string {
 	var guilds []UniqueGuildResponse
 
-	err := database.GetDB().
+	err := q.db.
 		NewSelect().
 		Model(&guilds).
 		ColumnExpr("DISTINCT guild_id").
-		Scan(database.GetContext())
+		Scan(q.ctx)
 
 	if err != nil {
 		panic(err)
@@ -37,15 +48,15 @@ func getAllGuilds() []string {
 	return guildIDs
 }
 
-func getUniquePlayersInTournament(tournamentID string) []string {
+func (q *Query) getUniquePlayersInTournament(tournamentID string) []string {
 	var players []UniquePlayerResponse
 
-	err := database.GetDB().
+	err := q.db.
 		NewSelect().
 		Model(&players).
 		ColumnExpr("DISTINCT player_id").
 		Where("tournament_id = ?", tournamentID).
-		Scan(database.GetContext())
+		Scan(q.ctx)
 
 	if err != nil {
 		panic(err)
@@ -60,16 +71,16 @@ func getUniquePlayersInTournament(tournamentID string) []string {
 	return playerIDs
 }
 
-func getActiveTournament(guildID string, create bool) *Tournament {
+func (q *Query) getActiveTournament(guildID string, create bool) *Tournament {
 	now := time.Now().Unix()
 	tournament := new(Tournament)
-	err := database.GetDB().
+	err := q.db.
 		NewSelect().
 		Model(tournament).
 		Where("start <= ?", now).
 		Where("end >= ?", now).
 		Where("guild_id = ?", guildID).
-		Scan(database.GetContext())
+		Scan(q.ctx)
 
 		// TODO: handle this better
 	if err != nil {
@@ -77,23 +88,23 @@ func getActiveTournament(guildID string, create bool) *Tournament {
 			return nil
 		}
 
-		tournament = createTournament(guildID, defaultTournamentDays)
+		tournament = q.createTournament(guildID, defaultTournamentDays)
 	}
 
 	return tournament
 }
 
-func getInactiveTournaments(guildID string) []*Tournament {
+func (q *Query) getInactiveTournaments(guildID string) []*Tournament {
 	now := time.Now().Unix()
 
 	var tournaments []*Tournament
 
-	err := database.GetDB().
+	err := q.db.
 		NewSelect().
 		Model((*Tournament)(nil)).
 		Where("end < ?", now).
 		Where("guild_id = ?", guildID).
-		Scan(database.GetContext(), &tournaments)
+		Scan(q.ctx, &tournaments)
 
 	if err != nil {
 		panic(err)
@@ -102,14 +113,14 @@ func getInactiveTournaments(guildID string) []*Tournament {
 	return tournaments
 }
 
-func getTournamentPlacements(tournamentID string) []*TournamentWinner {
+func (q *Query) getTournamentPlacements(tournamentID string) []*TournamentWinner {
 	var winners []*TournamentWinner
 
-	err := database.GetDB().
+	err := q.db.
 		NewSelect().
 		Model((*TournamentWinner)(nil)).
 		Where("tournament_id = ?", tournamentID).
-		Scan(database.GetContext(), winners)
+		Scan(q.ctx, winners)
 
 	if err != nil {
 		panic(err)
@@ -118,15 +129,15 @@ func getTournamentPlacements(tournamentID string) []*TournamentWinner {
 	return winners
 }
 
-func getTournamentPlacement(tournamentID string, playerID string) *TournamentWinner {
+func (q *Query) getTournamentPlacement(tournamentID string, playerID string) *TournamentWinner {
 	winner := new(TournamentWinner)
 
-	err := database.GetDB().
+	err := q.db.
 		NewSelect().
 		Model(winner).
 		Where("tournament_id = ?", tournamentID).
 		Where("player_id = ?", playerID).
-		Scan(database.GetContext())
+		Scan(q.ctx)
 
 	if err != nil {
 		panic(err)
@@ -135,11 +146,11 @@ func getTournamentPlacement(tournamentID string, playerID string) *TournamentWin
 	return winner
 }
 
-func createTournamentPlacements(tournamentID string, guildID string) {
-	winners := getStrokeLeaders(tournamentID, guildID)
+func (q *Query) createTournamentPlacements(tournamentID string, guildID string) {
+	winners := q.getStrokeLeaders(tournamentID, guildID)
 
 	for i, winner := range winners {
-		exists := getTournamentPlacement(tournamentID, winner.PlayerID)
+		exists := q.getTournamentPlacement(tournamentID, winner.PlayerID)
 		if exists == nil {
 			tournamentWinner := TournamentWinner{
 				ID:           uuid.NewString(),
@@ -151,10 +162,10 @@ func createTournamentPlacements(tournamentID string, guildID string) {
 				Placement:    i + 1,
 			}
 
-			_, err := database.GetDB().
+			_, err := q.db.
 				NewInsert().
 				Model(tournamentWinner).
-				Exec(database.GetContext())
+				Exec(q.ctx)
 
 			if err != nil {
 				panic(err)
@@ -163,15 +174,15 @@ func createTournamentPlacements(tournamentID string, guildID string) {
 	}
 }
 
-func checkIfPlayerHasRound(playerID string, tournamentID string, date int64) bool {
-	exists, err := database.GetDB().
+func (q *Query) checkIfPlayerHasRound(playerID string, tournamentID string, date int64) bool {
+	exists, err := q.db.
 		NewSelect().
 		Model((*Round)(nil)).
 		Where("player_id = ?", playerID).
 		Where("inserted_at >= ?", date).
 		Where("inserted_at <= ?", date+86400).
 		Where("tournament_id = ?", tournamentID).
-		Exists(database.GetContext())
+		Exists(q.ctx)
 
 	if err != nil {
 		panic(err)
@@ -180,7 +191,7 @@ func checkIfPlayerHasRound(playerID string, tournamentID string, date int64) boo
 	return exists
 }
 
-func createTournament(guildID string, days int) *Tournament {
+func (q *Query) createTournament(guildID string, days int) *Tournament {
 	now := time.Now()
 	daysToEnd := time.Duration(days) * 24 * time.Hour
 	end := utils.GetEndofDay(now.Add(daysToEnd).Unix())
@@ -192,10 +203,10 @@ func createTournament(guildID string, days int) *Tournament {
 		End:     end,
 	}
 
-	_, err := database.GetDB().
+	_, err := q.db.
 		NewInsert().
 		Model(&tournament).
-		Exec(database.GetContext())
+		Exec(q.ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -203,19 +214,19 @@ func createTournament(guildID string, days int) *Tournament {
 }
 
 // Insert inserts a round into the database
-func (cg *Round) Insert() bool {
+func (q *Query) Insert(round *Round) bool {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	start, end := utils.GetTimeBoundary(cg.InsertedAt)
-	exists, err := database.GetDB().
+	start, end := utils.GetTimeBoundary(round.InsertedAt)
+	exists, err := q.db.
 		NewSelect().
 		Model((*Round)(nil)).
-		Where("player_id = ?", cg.PlayerID).
-		Where("guild_id = ?", cg.GuildID).
+		Where("player_id = ?", round.PlayerID).
+		Where("guild_id = ?", round.GuildID).
 		Where("inserted_at >= ?", start).
 		Where("inserted_at <= ?", end).
-		Exists(database.GetContext())
+		Exists(q.ctx)
 
 	if err != nil {
 		panic(err)
@@ -225,43 +236,45 @@ func (cg *Round) Insert() bool {
 		return false
 	}
 
-	uniquePlyrs := getUniquePlayersInTournament(cg.TournamentID)
-	hasPlayed := slices.Contains(uniquePlyrs, cg.PlayerID)
+	// TODO: handle this
+	// uniquePlyrs := q.getUniquePlayersInTournament(round.TournamentID)
+	// hasPlayed := slices.Contains(uniquePlyrs, round.PlayerID)
 
-	if !hasPlayed {
-		go AddMissingRounds()
-	}
+	// if !hasPlayed {
+	// 	go AddMissingRounds()
+	// }
 
-	_, err = database.GetDB().
+	_, err = q.db.
 		NewInsert().
-		Model(cg).
-		Exec(database.GetContext())
+		Model(round).
+		Exec(q.ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	if len(cg.Holes) > 0 {
-		_, err = database.GetDB().
+	if len(round.Holes) > 0 {
+		_, err = q.db.
 			NewInsert().
-			Model(&cg.Holes).
-			Exec(database.GetContext())
+			Model(&round.Holes).
+			Exec(q.ctx)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	go func() {
-		leaderboardCacheKey := getLeaderboardCacheKey(cg.GuildID)
-		cache.DeleteKey(leaderboardCacheKey)
-		generateLeaderboard(cg.GuildID)
-	}()
+	// TODO: replace this cache busting
+	// go func() {
+	// 	leaderboardCacheKey := getLeaderboardCacheKey(round.GuildID)
+	// 	cache.DeleteKey(leaderboardCacheKey)
+	// 	generateLeaderboard(round.GuildID)
+	// }()
 
 	return true
 }
 
-func getStrokeLeaders(guildID string, tournamentID string) []Round {
+func (q *Query) getStrokeLeaders(guildID string, tournamentID string) []Round {
 	var rounds []Round
-	database.GetDB().
+	q.db.
 		NewSelect().
 		Model((*Round)(nil)).
 		ColumnExpr("SUM(total_strokes) AS total_strokes, player_id").
@@ -269,13 +282,13 @@ func getStrokeLeaders(guildID string, tournamentID string) []Round {
 		Where("tournament_id = ?", tournamentID).
 		Group("player_id").
 		Order("total_strokes ASC").
-		Scan(database.GetContext(), &rounds)
+		Scan(q.ctx, &rounds)
 	return rounds
 }
 
-func getHardestHole(guildID string, tournamentID string) *HardestHoleResponse {
+func (q *Query) getHardestHole(guildID string, tournamentID string) *HardestHoleResponse {
 	hole := new(HardestHoleResponse)
-	database.GetDB().
+	q.db.
 		NewSelect().
 		Model(hole).
 		ColumnExpr("AVG(strokes) AS strokes, color").
@@ -284,14 +297,14 @@ func getHardestHole(guildID string, tournamentID string) *HardestHoleResponse {
 		Group("color").
 		Order("strokes desc").
 		Limit(1).
-		Scan(database.GetContext())
+		Scan(q.ctx)
 
 	return hole
 }
 
-func mostCommonHole(guildID string, index int, tournamentID string) string {
+func (q *Query) mostCommonHole(guildID string, index int, tournamentID string) string {
 	hole := new(Hole)
-	database.GetDB().
+	q.db.
 		NewSelect().
 		Model(hole).
 		ColumnExpr("CAST(COUNT(color) as INT) AS strokes, color").
@@ -301,21 +314,21 @@ func mostCommonHole(guildID string, index int, tournamentID string) string {
 		Group("color").
 		Order("strokes desc").
 		Limit(1).
-		Scan(database.GetContext())
+		Scan(q.ctx)
 	return hole.Color
 }
 
-func mostCommonFirstHole(guildID string, tournamentID string) string {
-	return mostCommonHole(guildID, 0, tournamentID)
+func (q *Query) mostCommonFirstHole(guildID string, tournamentID string) string {
+	return q.mostCommonHole(guildID, 0, tournamentID)
 }
 
-func mostCommonLastHole(guildID string, tournamentID string) string {
-	return mostCommonHole(guildID, 4, tournamentID)
+func (q *Query) mostCommonLastHole(guildID string, tournamentID string) string {
+	return q.mostCommonHole(guildID, 4, tournamentID)
 }
 
-func getWorstRound(guildID string, tournamentID string) *Round {
+func (q *Query) getWorstRound(guildID string, tournamentID string) *Round {
 	round := new(Round)
-	database.GetDB().
+	q.db.
 		NewSelect().
 		Model(round).
 		Where("guild_id = ?", guildID).
@@ -323,7 +336,7 @@ func getWorstRound(guildID string, tournamentID string) *Round {
 		Where("original_date != ''").
 		Order("total_strokes desc").
 		Limit(1).
-		Scan(database.GetContext(), round)
+		Scan(q.ctx, round)
 
 	return round
 }

@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ryansheppard/morningjuegos/internal/cache"
 	"github.com/ryansheppard/morningjuegos/internal/utils"
 )
 
@@ -14,15 +13,15 @@ func getLeaderboardCacheKey(guildID string) string {
 	return fmt.Sprintf("leaderboard:%s", guildID)
 }
 
-func generateLeaderboard(guildID string) string {
-	tournament := getActiveTournament(guildID, false)
+func (cg *CoffeeGolf) generateLeaderboard(guildID string) string {
+	tournament := cg.Query.getActiveTournament(guildID, false)
 	if tournament == nil {
 		return "No active tournament"
 	}
 
 	// TODO: Probably should care about the error
 	cacheKey := getLeaderboardCacheKey(guildID)
-	cached, _ := cache.GetKey(cacheKey)
+	cached, _ := cg.Cache.GetKey(cacheKey)
 	if cached != nil {
 		return cached.(string)
 	}
@@ -32,7 +31,7 @@ func generateLeaderboard(guildID string) string {
 
 	tournamentString := fmt.Sprintf("Current Tournament: %s - %s", startDate, endDate)
 
-	strokeLeaders := getStrokeLeaders(guildID, tournament.ID)
+	strokeLeaders := cg.Query.getStrokeLeaders(guildID, tournament.ID)
 	if len(strokeLeaders) == 0 {
 		return "No one has played yet!"
 	}
@@ -42,7 +41,7 @@ func generateLeaderboard(guildID string) string {
 	startOfDay := utils.GetStartofDay(time.Now().Unix())
 	skipCounter := 0
 	for i, leader := range strokeLeaders {
-		hasPlayedToday := checkIfPlayerHasRound(leader.PlayerID, tournament.ID, startOfDay)
+		hasPlayedToday := cg.Query.checkIfPlayerHasRound(leader.PlayerID, tournament.ID, startOfDay)
 		if hasPlayedToday {
 			leaderStrings = append(leaderStrings, fmt.Sprintf("%d: <@%s> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes))
 		} else {
@@ -61,21 +60,21 @@ func generateLeaderboard(guildID string) string {
 		notYetPlayedString = "Not Played Yet\n" + strings.Join(notYetPlayed, "\n")
 	}
 
-	hole := getHardestHole(guildID, tournament.ID)
+	hole := cg.Query.getHardestHole(guildID, tournament.ID)
 	holeString := fmt.Sprintf("The hardest hole was %s and took an average of %0.2f strokes", hole.Color, hole.Strokes)
 
-	firstMost := mostCommonFirstHole(guildID, tournament.ID)
-	lastMost := mostCommonLastHole(guildID, tournament.ID)
+	firstMost := cg.Query.mostCommonFirstHole(guildID, tournament.ID)
+	lastMost := cg.Query.mostCommonLastHole(guildID, tournament.ID)
 	mostCommonString := fmt.Sprintf("The most common first hole was %s and the last was %s", firstMost, lastMost)
 
-	worstRound := getWorstRound(guildID, tournament.ID)
+	worstRound := cg.Query.getWorstRound(guildID, tournament.ID)
 	worstRoundString := fmt.Sprintf("The worst round was %d strokes by <@%s>", worstRound.TotalStrokes, worstRound.PlayerID)
 
 	statsStr := "\n" + "Stats powered by AWS Next Gen Stats" + "\n" + holeString + "\n" + mostCommonString + "\n" + worstRoundString
 
 	all := tournamentString + "\n\n" + leaderString + "\n" + notYetPlayedString + "\n" + statsStr
 
-	cache.SetKey(cacheKey, all, 3600)
+	cg.Cache.SetKey(cacheKey, all, 3600)
 
 	return all
 }

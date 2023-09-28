@@ -12,34 +12,23 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/game"
 )
 
-// GetCoffeeGolfGame returns a new Coffee Golf game
-func GetCoffeeGolfGame() *game.Game {
-	return &game.Game{
-		NewParser(),
-		commands,
-		handlers,
-	}
-}
-
 func isCoffeeGolf(message string) bool {
-	if strings.HasPrefix(message, "Coffee Golf") {
-		return true
-	}
-
-	return false
+	return strings.HasPrefix(message, "Coffee Golf")
 }
-
-// Parser parses a Coffee Golf game
-type Parser struct{}
 
 // ParseGame parses a Coffee Golf game from a Discord message
-func (p *Parser) ParseGame(m *discordgo.MessageCreate) game.ParserResponse {
+func (cg *CoffeeGolf) ParseGame(m *discordgo.MessageCreate) game.ParserResponse {
 	message := m.Content
 	isCoffeGolf := isCoffeeGolf(m.Content)
 	if isCoffeGolf {
 		fmt.Println("Got a coffee golf message")
-		cg := NewRoundFromString(message, m.GuildID, m.Member.Nick, m.Author.ID)
-		inserted := cg.Insert()
+		tournament := cg.Query.getActiveTournament(m.GuildID, true)
+		if tournament == nil {
+			panic("tournament == nil")
+		}
+		round := NewRoundFromString(message, m.GuildID, m.Member.Nick, m.Author.ID, tournament.ID)
+
+		inserted := cg.Query.Insert(round)
 		return game.ParserResponse{
 			IsGame:   true,
 			Inserted: inserted,
@@ -52,13 +41,8 @@ func (p *Parser) ParseGame(m *discordgo.MessageCreate) game.ParserResponse {
 	}
 }
 
-// NewParser returns a new Coffee Golf parser
-func NewParser() game.Parser {
-	return &Parser{}
-}
-
 // NewRoundFromString returns a new Round from a string
-func NewRoundFromString(message string, guildID string, playerName string, playerID string) *Round {
+func NewRoundFromString(message string, guildID string, playerName string, playerID string, tournamentID string) *Round {
 	lines := strings.Split(message, "\n")
 	dateLine := lines[0]
 	totalStrokeLine := lines[1]
@@ -67,20 +51,15 @@ func NewRoundFromString(message string, guildID string, playerName string, playe
 
 	id := uuid.NewString()
 
-	tournament := getActiveTournament(guildID, true)
-	if tournament == nil {
-		panic("tournament == nil")
-	}
-
 	date := parseDateLine(dateLine)
 	totalStrokes := parseTotalStrikes(totalStrokeLine)
 	percentLine := parsePercentLine(totalStrokeLine)
-	holes := parseStrokeLines(id, guildID, tournament.ID, holeLine, strokesLine)
+	holes := parseStrokeLines(id, guildID, tournamentID, holeLine, strokesLine)
 
 	return &Round{
 		ID:           id,
 		PlayerName:   playerName,
-		TournamentID: tournament.ID,
+		TournamentID: tournamentID,
 		PlayerID:     playerID,
 		GuildID:      guildID,
 		OriginalDate: date,

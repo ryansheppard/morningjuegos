@@ -4,62 +4,69 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/ryansheppard/morningjuegos/internal/game"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf"
 )
 
-var Parsers []game.Parser
-
 type Discord struct {
-	Discord *discordgo.Session
-	AppID   string
+	Discord    *discordgo.Session
+	AppID      string
+	CoffeeGolf *coffeegolf.CoffeeGolf
 }
 
-func NewDiscord(token string, appID string) *Discord {
+func NewDiscord(token string, appID string, cg *coffeegolf.CoffeeGolf) *Discord {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		panic(err)
 	}
 
-	dg.AddHandler(messageCreate)
+	return &Discord{
+		Discord:    dg,
+		AppID:      appID,
+		CoffeeGolf: cg,
+	}
+}
+
+func (d *Discord) Configure() error {
+	commands := []*discordgo.ApplicationCommand{
+		{
+			Name:        "coffeegolf",
+			Description: "Gets the leaderboard for Coffee Golf",
+		},
+	}
+
+	handlers := map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"coffeegolf": d.CoffeeGolf.LeaderboardCmd,
+	}
+	for _, command := range commands {
+		d.AddCommand(command)
+	}
+
+	for _, handler := range handlers {
+		d.AddCommandHandler(handler)
+	}
+
+	d.Discord.AddHandler(d.messageCreate)
 
 	// TODO: clean these up
-	dg.Identify.Intents = discordgo.IntentsGuilds |
+	d.Discord.Identify.Intents = discordgo.IntentsGuilds |
 		discordgo.IntentsGuildMessages |
 		discordgo.IntentsGuildMembers |
 		discordgo.IntentMessageContent |
 		discordgo.IntentGuildMessageReactions
 
-	err = dg.Open()
+	err := d.Discord.Open()
 	if err != nil {
 		fmt.Println("Error opening Discord session: ", err)
+		return err
 	}
 
-	return &Discord{
-		Discord: dg,
-		AppID:   appID,
-	}
-}
-
-func (d *Discord) RegisterGame(g *game.Game) {
-	d.AddParser(g.Parser)
-
-	for _, command := range g.Commands {
-		d.AddCommand(command)
-	}
-
-	for _, handler := range g.Handlers {
-		d.AddCommandHandler(handler)
-	}
-}
-
-func (d *Discord) AddParser(parser game.Parser) {
-	Parsers = append(Parsers, parser)
+	return nil
 }
 
 func (d *Discord) AddCommand(command *discordgo.ApplicationCommand) {
 	_, err := d.Discord.ApplicationCommandCreate(d.AppID, "", command)
 	if err != nil {
-		fmt.Errorf("Cannot create '%v' command: %v", command.Name, err)
+		fmt.Printf("Cannot create '%v' command: %v", command.Name, err)
 	}
 }
 

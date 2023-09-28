@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
+	"github.com/ryansheppard/morningjuegos/internal/database"
 	"github.com/ryansheppard/morningjuegos/migrations"
 )
 
@@ -11,7 +14,13 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates a migration",
 	Run: func(cmd *cobra.Command, args []string) {
-		migrations.CreateMigration(args[0])
+		dbPath := os.Getenv("DB_PATH")
+		db, err := database.CreateConnection(dbPath)
+		if err != nil {
+			panic(err)
+		}
+
+		migrations.CreateMigration(db, args[0])
 	},
 }
 

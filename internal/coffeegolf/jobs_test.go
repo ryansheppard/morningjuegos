@@ -10,13 +10,22 @@ import (
 func TestAddMissingRounds(t *testing.T) {
 	t.Parallel()
 
-	AddMissingRounds()
+	ctx := context.Background()
+	dbPath := "file::memory:?cache=shared"
+	db, err := database.CreateConnection(dbPath)
+	if err != nil {
+		panic(err)
+	}
+
+	cg := NewCoffeeGolf(NewQuery(ctx, db), nil)
+
+	cg.AddMissingRounds()
 
 	var rounds []Round
-	err := database.GetDB().NewSelect().
+	err = cg.Query.db.NewSelect().
 		Model(&rounds).
 		Where("tournament_id = ?", "a1").
-		Scan(context.Background())
+		Scan(ctx)
 	if err != nil {
 		panic(err)
 	}

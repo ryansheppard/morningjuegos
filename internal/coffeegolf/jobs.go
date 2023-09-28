@@ -8,12 +8,12 @@ import (
 
 const defaultStrokes = 20
 
-func AddMissingRounds() {
-	guilds := getAllGuilds()
+func (cg *CoffeeGolf) AddMissingRounds() {
+	guilds := cg.Query.getAllGuilds()
 
 	var tournaments []Tournament
 	for _, guild := range guilds {
-		tournament := getActiveTournament(guild, false)
+		tournament := cg.Query.getActiveTournament(guild, false)
 		if tournament != nil {
 			tournaments = append(tournaments, *tournament)
 		}
@@ -29,14 +29,14 @@ func AddMissingRounds() {
 		}
 
 		numDaysPlayed := (now - tournament.Start) / 86400
-		players := getUniquePlayersInTournament(tournament.ID)
+		players := cg.Query.getUniquePlayersInTournament(tournament.ID)
 
 		for i := int64(0); i < numDaysPlayed; i++ {
 			day := start + (i * 86400)
 			for _, player := range players {
-				exists := checkIfPlayerHasRound(player, tournament.ID, day)
+				exists := cg.Query.checkIfPlayerHasRound(player, tournament.ID, day)
 				if !exists {
-					entry := Round{
+					entry := &Round{
 						ID:           uuid.NewString(),
 						PlayerName:   "",
 						PlayerID:     player,
@@ -48,30 +48,30 @@ func AddMissingRounds() {
 						Holes:        []Hole{},
 					}
 
-					entry.Insert()
+					cg.Query.Insert(entry)
 				}
 			}
 		}
 	}
 }
 
-func AddTournamentWinners() {
-	guilds := getAllGuilds()
+func (cg *CoffeeGolf) AddTournamentWinners() {
+	guilds := cg.Query.getAllGuilds()
 
 	var inactiveTournaments []*Tournament
 	for _, guild := range guilds {
-		tournaments := getInactiveTournaments(guild)
+		tournaments := cg.Query.getInactiveTournaments(guild)
 		if len(tournaments) > 0 {
 			inactiveTournaments = append(inactiveTournaments, tournaments...)
 		}
 	}
 
 	for _, tournament := range inactiveTournaments {
-		uniquePlayers := getUniquePlayersInTournament(tournament.ID)
-		placements := getTournamentPlacements(tournament.ID)
+		uniquePlayers := cg.Query.getUniquePlayersInTournament(tournament.ID)
+		placements := cg.Query.getTournamentPlacements(tournament.ID)
 
 		if len(uniquePlayers) != len(placements) {
-			createTournamentPlacements(tournament.ID, tournament.GuildID)
+			cg.Query.createTournamentPlacements(tournament.ID, tournament.GuildID)
 		}
 	}
 }

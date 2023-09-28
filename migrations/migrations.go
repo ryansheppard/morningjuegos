@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ryansheppard/morningjuegos/internal/database"
+	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/migrate"
 )
 
@@ -12,15 +12,13 @@ var Migrations = migrate.NewMigrations()
 
 var migrator *migrate.Migrator
 
-func InitMigrations() {
-	db := database.GetDB()
+func InitMigrations(db *bun.DB) {
 	migrator = migrate.NewMigrator(db, Migrations)
 	fmt.Println(migrator)
 	migrator.Init(context.TODO())
 }
 
-func RunMigrations() error {
-	db := database.GetDB()
+func RunMigrations(db *bun.DB) error {
 	migrator = migrate.NewMigrator(db, Migrations)
 	if err := migrator.Lock(context.TODO()); err != nil {
 		return err
@@ -40,8 +38,7 @@ func RunMigrations() error {
 
 }
 
-func CreateMigration(name string) error {
-	db := database.GetDB()
+func CreateMigration(db *bun.DB, name string) error {
 	migrator := migrate.NewMigrator(db, Migrations)
 	mf, err := migrator.CreateGoMigration(context.TODO(), name)
 	if err != nil {

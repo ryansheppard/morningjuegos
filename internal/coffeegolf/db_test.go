@@ -15,9 +15,17 @@ import (
 
 var fixture *dbfixture.Fixture
 
+var q *Query
+
 func TestMain(m *testing.M) {
+	ctx := context.Background()
 	dbPath := "file::memory:?cache=shared"
-	database.CreateConnection(dbPath)
+	db, err := database.CreateConnection(dbPath)
+	if err != nil {
+		panic(err)
+	}
+
+	q = NewQuery(ctx, db)
 
 	funcMap := template.FuncMap{
 		"now": func() int64 {
@@ -31,10 +39,10 @@ func TestMain(m *testing.M) {
 		},
 	}
 
-	database.GetDB().RegisterModel((*Round)(nil), (*Hole)(nil), (*Tournament)(nil), (*TournamentWinner)(nil))
+	q.db.RegisterModel((*Round)(nil), (*Hole)(nil), (*Tournament)(nil), (*TournamentWinner)(nil))
 
-	fixture = dbfixture.New(database.GetDB(), dbfixture.WithRecreateTables(), dbfixture.WithTemplateFuncs(funcMap))
-	if err := fixture.Load(context.TODO(), os.DirFS("testdata"), "fixture.yml"); err != nil {
+	fixture = dbfixture.New(q.db, dbfixture.WithRecreateTables(), dbfixture.WithTemplateFuncs(funcMap))
+	if err := fixture.Load(ctx, os.DirFS("testdata"), "fixture.yml"); err != nil {
 		panic(err)
 	}
 
@@ -44,7 +52,7 @@ func TestMain(m *testing.M) {
 func TestGetStrokeLeaders(t *testing.T) {
 	t.Parallel()
 
-	leaders := getStrokeLeaders("1234", "a1")
+	leaders := q.getStrokeLeaders("1234", "a1")
 
 	if len(leaders) != 1 {
 		t.Error("len(leaders) != 1")
@@ -54,7 +62,7 @@ func TestGetStrokeLeaders(t *testing.T) {
 func TestGetStrokeLeadersEmpty(t *testing.T) {
 	t.Parallel()
 
-	leaders := getStrokeLeaders("12354", "a1")
+	leaders := q.getStrokeLeaders("12354", "a1")
 
 	if len(leaders) != 0 {
 		t.Error("len(leaders) != 0")
@@ -64,7 +72,7 @@ func TestGetStrokeLeadersEmpty(t *testing.T) {
 func TestGetHardestHole(t *testing.T) {
 	t.Parallel()
 
-	hardest := getHardestHole("1234", "a1")
+	hardest := q.getHardestHole("1234", "a1")
 	want := &HardestHoleResponse{
 		Color:   "blue",
 		Strokes: 3,
@@ -77,7 +85,7 @@ func TestGetHardestHole(t *testing.T) {
 
 func TestMostCommonFirstHole(t *testing.T) {
 	t.Parallel()
-	hole := mostCommonFirstHole("1234", "a1")
+	hole := q.mostCommonFirstHole("1234", "a1")
 	if hole != "blue" {
 		t.Error("hole != blue")
 	}
@@ -85,7 +93,7 @@ func TestMostCommonFirstHole(t *testing.T) {
 
 func TestMostCommonLastHole(t *testing.T) {
 	t.Parallel()
-	hole := mostCommonLastHole("1234", "a1")
+	hole := q.mostCommonLastHole("1234", "a1")
 	if hole != "red" {
 		t.Error("hole != red")
 	}
@@ -94,7 +102,7 @@ func TestMostCommonLastHole(t *testing.T) {
 
 func TestSecondMostCommonHole(t *testing.T) {
 	t.Parallel()
-	hole := mostCommonHole("1234", 1, "a1")
+	hole := q.mostCommonHole("1234", 1, "a1")
 	if hole != "green" {
 		t.Error("hole != green")
 	}
@@ -117,7 +125,7 @@ func TestInsert(t *testing.T) {
 		})
 	}
 
-	round := Round{
+	round := &Round{
 		ID:           "12345",
 		GuildID:      "12345",
 		PlayerName:   "test",
@@ -129,14 +137,10 @@ func TestInsert(t *testing.T) {
 		Holes:        coffeeGolfHoles,
 	}
 
-	round.Insert()
+	q.Insert(round)
 
 	got := new(Round)
-	database.GetDB().NewSelect().Model(got).Where("id = ?", "12345").Scan(context.TODO())
-
-	if got == nil {
-		t.Error("got == nil")
-	}
+	q.db.NewSelect().Model(got).Where("id = ?", "12345").Scan(q.ctx)
 
 	if got.ID != round.ID {
 		t.Error("got.ID != round.ID")
@@ -150,7 +154,7 @@ func TestInsert(t *testing.T) {
 
 func TestGetActiveTournament(t *testing.T) {
 	t.Parallel()
-	tournament := getActiveTournament("1234", false)
+	tournament := q.getActiveTournament("1234", false)
 	if tournament == nil {
 		t.Error("tournament == nil")
 	}
@@ -162,7 +166,7 @@ func TestGetActiveTournament(t *testing.T) {
 
 func TestGetUniqueGuilds(t *testing.T) {
 	t.Parallel()
-	guilds := getAllGuilds()
+	guilds := q.getAllGuilds()
 
 	// TODO: don't just check length
 	if len(guilds) != 3 {
@@ -173,7 +177,7 @@ func TestGetUniqueGuilds(t *testing.T) {
 func TestGetUniquePlayers(t *testing.T) {
 	t.Parallel()
 
-	players := getUniquePlayersInTournament("a1")
+	players := q.getUniquePlayersInTournament("a1")
 
 	if len(players) != 1 {
 		t.Error("len(players) != 1")
@@ -183,7 +187,7 @@ func TestGetUniquePlayers(t *testing.T) {
 func TestGetWorstRound(t *testing.T) {
 	t.Parallel()
 
-	worstRound := getWorstRound("bad", "a3")
+	worstRound := q.getWorstRound("bad", "a3")
 
 	if worstRound.ID != "worst" {
 		t.Error("worstRound.ID != worst")
@@ -194,5 +198,5 @@ func TestCreateTournament(t *testing.T) {
 	t.Parallel()
 
 	// literally just needed to test something here and don't care about the result
-	createTournament("helo", 5)
+	q.createTournament("helo", 5)
 }
