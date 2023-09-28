@@ -239,14 +239,6 @@ func (q *Query) Insert(round *Round) bool {
 		return false
 	}
 
-	// TODO: handle this
-	// uniquePlyrs := q.getUniquePlayersInTournament(round.TournamentID)
-	// hasPlayed := slices.Contains(uniquePlyrs, round.PlayerID)
-
-	// if !hasPlayed {
-	// 	go AddMissingRounds()
-	// }
-
 	_, err = q.db.
 		NewInsert().
 		Model(round).
