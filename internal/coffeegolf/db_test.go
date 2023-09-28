@@ -157,9 +157,7 @@ func TestGetActiveTournament(t *testing.T) {
 	tournament := q.getActiveTournament("1234", false)
 	if tournament == nil {
 		t.Error("tournament == nil")
-	}
-
-	if tournament.ID != "a1" {
+	} else if tournament.ID != "a1" {
 		t.Error("tournament.ID != a1")
 	}
 }
