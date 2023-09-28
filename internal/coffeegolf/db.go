@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryansheppard/morningjuegos/internal/cache"
 	"github.com/ryansheppard/morningjuegos/internal/utils"
 	"github.com/uptrace/bun"
 )
@@ -15,14 +16,16 @@ const defaultTournamentDays = 10
 var mutex = &sync.Mutex{}
 
 type Query struct {
-	ctx context.Context
-	db  *bun.DB
+	ctx   context.Context
+	db    *bun.DB
+	cache *cache.Cache
 }
 
-func NewQuery(ctx context.Context, db *bun.DB) *Query {
+func NewQuery(ctx context.Context, db *bun.DB, cache *cache.Cache) *Query {
 	return &Query{
-		ctx: ctx,
-		db:  db,
+		ctx:   ctx,
+		db:    db,
+		cache: cache,
 	}
 }
 
@@ -262,12 +265,12 @@ func (q *Query) Insert(round *Round) bool {
 		}
 	}
 
-	// TODO: replace this cache busting
-	// go func() {
-	// 	leaderboardCacheKey := getLeaderboardCacheKey(round.GuildID)
-	// 	cache.DeleteKey(leaderboardCacheKey)
-	// 	generateLeaderboard(round.GuildID)
-	// }()
+	go func() {
+		if q.cache != nil {
+			leaderboardCacheKey := getLeaderboardCacheKey(round.GuildID)
+			q.cache.DeleteKey(leaderboardCacheKey)
+		}
+	}()
 
 	return true
 }

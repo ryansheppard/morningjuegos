@@ -17,7 +17,7 @@ func TestAddMissingRounds(t *testing.T) {
 		panic(err)
 	}
 
-	cg := NewCoffeeGolf(NewQuery(ctx, db), nil)
+	cg := NewCoffeeGolf(NewQuery(ctx, db, nil), nil)
 
 	cg.AddMissingRounds()
 

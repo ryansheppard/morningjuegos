@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	q = NewQuery(ctx, db)
+	q = NewQuery(ctx, db, nil)
 
 	funcMap := template.FuncMap{
 		"now": func() int64 {

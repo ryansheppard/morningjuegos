@@ -33,7 +33,7 @@ var botCmd = &cobra.Command{
 			panic(err)
 		}
 
-		q := coffeegolf.NewQuery(ctx, db)
+		q := coffeegolf.NewQuery(ctx, db, c)
 
 		cg := coffeegolf.NewCoffeeGolf(q, c)
 
