@@ -15,7 +15,7 @@ type Guild struct {
 
 type Hole struct {
 	ID         int32
-	RoundID    int64
+	RoundID    int32
 	HoleNumber int32
 	Color      string
 	Strokes    int32

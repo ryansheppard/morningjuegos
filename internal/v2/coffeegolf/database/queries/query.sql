@@ -17,7 +17,7 @@ SELECT DISTINCT player_id FROM round WHERE tournament_id = $1;
 
 -- Round Queries
 -- name: CreateRound :one
-INSERT INTO round (tournament_id, player_id, total_strokes, original_date, first_round) VALUES ($1, $2, $3, $4, $5) RETURNING *;
+INSERT INTO round (tournament_id, player_id, total_strokes, original_date, percentage, first_round) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
 
 -- name: HasPlayedToday :one
 SELECT * 

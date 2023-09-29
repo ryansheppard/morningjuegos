@@ -15,7 +15,7 @@ INSERT INTO hole (round_id, color, strokes, hole_number) VALUES ($1, $2, $3, $4)
 `
 
 type CreateHoleParams struct {
-	RoundID    int64
+	RoundID    int32
 	Color      string
 	Strokes    int32
 	HoleNumber int32
@@ -42,7 +42,7 @@ func (q *Queries) CreateHole(ctx context.Context, arg CreateHoleParams) (Hole, e
 }
 
 const createRound = `-- name: CreateRound :one
-INSERT INTO round (tournament_id, player_id, total_strokes, original_date, first_round) VALUES ($1, $2, $3, $4, $5) RETURNING id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage
+INSERT INTO round (tournament_id, player_id, total_strokes, original_date, percentage, first_round) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage
 `
 
 type CreateRoundParams struct {
@@ -50,6 +50,7 @@ type CreateRoundParams struct {
 	PlayerID     int64
 	TotalStrokes int32
 	OriginalDate string
+	Percentage   string
 	FirstRound   bool
 }
 
@@ -60,6 +61,7 @@ func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round
 		arg.PlayerID,
 		arg.TotalStrokes,
 		arg.OriginalDate,
+		arg.Percentage,
 		arg.FirstRound,
 	)
 	var i Round
