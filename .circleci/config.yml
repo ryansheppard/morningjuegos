@@ -14,7 +14,7 @@ jobs:
       - run:
           name: build
           command: |
-            export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos:
+            export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos
             docker build . -t $IMAGE:$CIRCLE_BUILD_NUM
             docker tag $IMAGE:$CIRCLE_BUILD_NUM $IMAGE:latest
       - run:
