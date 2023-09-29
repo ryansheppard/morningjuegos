@@ -39,3 +39,18 @@ func (g *Game) LeaderboardCmd(s *discordgo.Session, i *discordgo.InteractionCrea
 	})
 
 }
+
+func (g *Game) GetCommands() []*discordgo.ApplicationCommand {
+	return []*discordgo.ApplicationCommand{
+		{
+			Name:        "coffeegolf",
+			Description: "Gets the leaderboard for Coffee Golf",
+		},
+	}
+}
+
+func (g *Game) GetHandlers() map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	return map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"coffeegolf": g.LeaderboardCmd,
+	}
+}
