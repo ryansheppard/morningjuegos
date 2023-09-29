@@ -13,6 +13,21 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/database"
 )
 
+var (
+	colors = map[string]string{
+		"blue":   "🟦",
+		"red":    "🟥",
+		"yellow": "🟨",
+		"green":  "🟩",
+		"purple": "🟪",
+	}
+	placements = map[int]string{
+		1: "🥇",
+		2: "🥈",
+		3: "🥉",
+	}
+)
+
 type Leaderboard struct {
 	ctx   context.Context
 	query *database.Queries
@@ -86,6 +101,11 @@ func (l *Leaderboard) GenerateLeaderboard(guildIDString string) string {
 			PlayerID:     leader.PlayerID,
 			TournamentID: tournament.ID,
 		})
+		var placementString string
+		if placement, ok := placements[i+1]; ok {
+			placementString = placement
+		}
+
 		hasPlayed := true
 		if err == sql.ErrNoRows {
 			hasPlayed = false
@@ -95,9 +115,9 @@ func (l *Leaderboard) GenerateLeaderboard(guildIDString string) string {
 		}
 
 		if hasPlayed {
-			leaderStrings = append(leaderStrings, fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes))
+			leaderStrings = append(leaderStrings, fmt.Sprintf("%d: <@%d> - %d Total Strokes %s", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes, placementString))
 		} else {
-			notYetPlayed = append(notYetPlayed, fmt.Sprintf("<@%d> - %d Total Strokes", leader.PlayerID, leader.TotalStrokes))
+			notYetPlayed = append(notYetPlayed, fmt.Sprintf("<@%d> - %d Total Strokes %s", leader.PlayerID, leader.TotalStrokes, placementString))
 			skipCounter++
 		}
 	}
@@ -115,7 +135,7 @@ func (l *Leaderboard) GenerateLeaderboard(guildIDString string) string {
 	if err != nil {
 		slog.Error("Failed to get hardest hole", "tournament", tournament.ID, "error", err)
 	}
-	holeString := fmt.Sprintf("The hardest hole was %s and took an average of %0.2f strokes", hole.Color, hole.Strokes)
+	holeString := fmt.Sprintf("Hardest hole: %s with an average of %0.2f strokes", colors[hole.Color], hole.Strokes)
 
 	// TODO: handle errors here
 	firstMost, _ := l.query.GetMostCommonHoleForNumber(l.ctx, database.GetMostCommonHoleForNumberParams{
@@ -126,10 +146,10 @@ func (l *Leaderboard) GenerateLeaderboard(guildIDString string) string {
 		TournamentID: tournament.ID,
 		HoleNumber:   4,
 	})
-	mostCommonString := fmt.Sprintf("The most common first hole was %s and the last was %s", firstMost.Color, lastMost.Color)
+	mostCommonString := fmt.Sprintf("Most common opening hole: %s\nMost common finishing hole: %s", colors[firstMost.Color], colors[lastMost.Color])
 
 	worstRound, _ := l.query.GetWorstRound(l.ctx, tournament.ID)
-	worstRoundString := fmt.Sprintf("The worst round was %d strokes by <@%d>", worstRound.TotalStrokes, worstRound.PlayerID)
+	worstRoundString := fmt.Sprintf("Worst round of the tournament: <@%d>, %d strokes 🤡", worstRound.PlayerID, worstRound.TotalStrokes)
 
 	statsStr := "\n\nStats powered by AWS Next Gen Stats" + "\n" + holeString + "\n" + mostCommonString + "\n" + worstRoundString
 
