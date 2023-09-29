@@ -8,22 +8,12 @@ import (
 	"time"
 )
 
-type Guild struct {
-	GuildID    int64
-	InsertedAt time.Time
-}
-
 type Hole struct {
 	ID         int32
 	RoundID    int32
 	HoleNumber int32
 	Color      string
 	Strokes    int32
-	InsertedAt time.Time
-}
-
-type Player struct {
-	PlayerID   int64
 	InsertedAt time.Time
 }
 

@@ -123,23 +123,23 @@ func (q *Queries) GetActiveTournament(ctx context.Context, guildID int64) (Tourn
 
 const getAllGuilds = `-- name: GetAllGuilds :many
 
-SELECT guild_id, inserted_at FROM guilds
+SELECT DISTINCT guild_id FROM tournament
 `
 
 // Guild Queries
-func (q *Queries) GetAllGuilds(ctx context.Context) ([]Guild, error) {
+func (q *Queries) GetAllGuilds(ctx context.Context) ([]int64, error) {
 	rows, err := q.db.QueryContext(ctx, getAllGuilds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Guild
+	var items []int64
 	for rows.Next() {
-		var i Guild
-		if err := rows.Scan(&i.GuildID, &i.InsertedAt); err != nil {
+		var guild_id int64
+		if err := rows.Scan(&guild_id); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, guild_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

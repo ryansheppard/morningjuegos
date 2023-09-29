@@ -1,7 +1,7 @@
 -- Guild Queries
 
 -- name: GetAllGuilds :many
-SELECT * FROM guilds;
+SELECT DISTINCT guild_id FROM tournament;
 
 -- Player Queries
 

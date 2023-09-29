@@ -10,16 +10,16 @@ import (
 const defaultStrokes = 20
 
 func (g *Game) AddMissingRounds() {
-	guilds, err := g.query.GetAllGuilds(g.ctx)
+	guildIDs, err := g.query.GetAllGuilds(g.ctx)
 	if err != nil {
 		slog.Error("Failed to get all guilds", err)
 	}
 
 	var tournaments []database.Tournament
-	for _, guild := range guilds {
-		tournament, err := g.query.GetActiveTournament(g.ctx, guild.GuildID)
+	for _, guildID := range guildIDs {
+		tournament, err := g.query.GetActiveTournament(g.ctx, guildID)
 		if err != nil {
-			slog.Error("Failed to get active tournament", "guild", guild, err)
+			slog.Error("Failed to get active tournament", "guild", guildID, err)
 			continue
 		}
 		if tournament != (database.Tournament{}) {
