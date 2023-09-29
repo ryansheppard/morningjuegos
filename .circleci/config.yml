@@ -16,12 +16,14 @@ jobs:
           command: |
             export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos:$CIRCLE_BUILD_NUM
             docker build . -t $IMAGE
+            docker tag $IMAGE latest
       - run:
           name: push
           command: |
             export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos:$CIRCLE_BUILD_NUM
             echo $DOCKER_USER | docker login --username $DOCKER_USER --password-stdin registry.digitalocean.com
             docker push $IMAGE
+            docker push latest
 
 workflows:
   build_and_test:
