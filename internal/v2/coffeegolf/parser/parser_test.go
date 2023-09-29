@@ -1,6 +1,7 @@
 package coffeegolf
 
 import (
+	"context"
 	"testing"
 
 	"github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/database"
@@ -16,7 +17,7 @@ const testString = `Coffee Golf - Sept 18
 func TestIsCoffeeGolf(t *testing.T) {
 	t.Parallel()
 
-	p := New(nil, nil)
+	p := New(context.TODO(), nil)
 
 	if !p.isCoffeeGolf(testString) {
 		t.Error("Expected true, got false")
@@ -26,7 +27,7 @@ func TestIsCoffeeGolf(t *testing.T) {
 func TestIsNotCoffeeGolf(t *testing.T) {
 	t.Parallel()
 
-	p := New(nil, nil)
+	p := New(context.TODO(), nil)
 
 	if p.isCoffeeGolf("Connections") {
 		t.Error("Expected true, got false")
