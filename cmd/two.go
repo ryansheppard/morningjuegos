@@ -6,11 +6,13 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/spf13/cobra"
 
-	"github.com/ryansheppard/morningjuegos/internal/cache"
+	_ "github.com/lib/pq"
+	"github.com/ryansheppard/morningjuegos/internal/v2/cache"
 	cgQueries "github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/database"
 	coffeegolf "github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/game"
 	"github.com/ryansheppard/morningjuegos/internal/v2/discord"
@@ -21,14 +23,24 @@ var twoCmd = &cobra.Command{
 	Short: "Runs the v2 discord bot",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
+		var err error
 
 		redisAddr := os.Getenv("REDIS_ADDR")
-		c := cache.New(ctx, redisAddr, 0)
+		redisDB := os.Getenv("REDIS_DB")
+		redisDBInt := 0
+		if redisDB != "" {
+			redisDBInt, err = strconv.Atoi(redisDB)
+			if err != nil {
+				slog.Error("Error converting redis db to int", "error", err)
+			}
+		}
+
+		c := cache.New(ctx, redisAddr, redisDBInt)
 
 		dsn := os.Getenv("DB_DSN")
 		db, err := sql.Open("postgres", dsn)
 		if err != nil {
-			slog.Error("Error opening database connection", err)
+			slog.Error("Error opening database connection", "error", err)
 			os.Exit(1)
 		}
 
@@ -38,9 +50,17 @@ var twoCmd = &cobra.Command{
 
 		token := os.Getenv("DISCORD_TOKEN")
 		appID := os.Getenv("DISCORD_APP_ID")
-		d := discord.NewDiscord(token, appID, cg)
+		d, err := discord.NewDiscord(token, appID, cg)
+		if err != nil {
+			slog.Error("Error creating discord", "error", err)
+			os.Exit(1)
+		}
 
-		d.Configure()
+		err = d.Configure()
+		if err != nil {
+			slog.Error("Error configuring discord", "error", err)
+			os.Exit(1)
+		}
 
 		slog.Info("MorningJuegos is now running. Press CTRL-C to exit.")
 		sc := make(chan os.Signal, 1)

@@ -20,7 +20,8 @@ func (d *Discord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate
 		s.MessageReactionAdd(m.ChannelID, m.ID, "🤯")
 	case parser.Failed:
 		s.MessageReactionAdd(m.ChannelID, m.ID, "🖕")
+	case parser.NotCoffeeGolf:
 	default:
-		s.MessageReactionAdd(m.ChannelID, m.ID, "🤯")
+		s.MessageReactionAdd(m.ChannelID, m.ID, "🤬")
 	}
 }

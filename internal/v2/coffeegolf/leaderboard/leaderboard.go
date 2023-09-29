@@ -2,14 +2,14 @@ package leaderboard
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"math/rand"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/ryansheppard/morningjuegos/internal/cache"
+	"github.com/ryansheppard/morningjuegos/internal/v2/cache"
 	"github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/database"
 )
 
@@ -35,27 +35,32 @@ func (l *Leaderboard) getLeaderboardCacheKey(guildID int64) string {
 func (l *Leaderboard) GenerateLeaderboard(guildIDString string) string {
 	guildID, err := strconv.ParseInt(guildIDString, 10, 64)
 	if err != nil {
-		slog.Error("Failed to parse guildID", "guild", guildIDString, err)
+		slog.Error("Failed to parse guildID", "guild", guildIDString, "error", err)
 		return "Could not generate a leaderboard for this discord server"
 	}
 
+	slog.Info("Generating leaderboard", "guild", guildID)
+
 	tournament, err := l.query.GetActiveTournament(l.ctx, guildID)
-	if err != nil {
-		slog.Error("Failed to get active tournament", "guild", guildID, err)
+	if err == sql.ErrNoRows {
 		return "Could not find a tournament for this discord server"
-	}
-	if tournament == (database.Tournament{}) {
-		return "No active tournament"
+	} else if err != nil {
+		slog.Error("Failed to get active tournament", "guild", guildID, "error", err)
+		return "Error getting a tournament for this discord server"
 	}
 
 	cacheKey := l.getLeaderboardCacheKey(guildID)
-	cached, err := l.cache.GetKey(cacheKey)
-	if err != nil {
-		slog.Error("Failed to get leaderboard from cache", "guild", guildID, err)
+	var cached interface{}
+	if l.cache != nil {
+		cached, err = l.cache.GetKey(cacheKey)
+		if err != nil {
+			slog.Error("Failed to get leaderboard from cache", "guild", guildID, "error", err)
+		}
 	}
 
 	// TODO figure out what happens if we get an error before this
 	if cached != nil {
+		slog.Info("Returning cached leaderboard", "guild", guildID)
 		return cached.(string)
 	}
 
@@ -66,7 +71,7 @@ func (l *Leaderboard) GenerateLeaderboard(guildIDString string) string {
 
 	strokeLeaders, err := l.query.GetLeaders(l.ctx, tournament.ID)
 	if err != nil {
-		slog.Error("Failed to get leaders", "guild", guildID, err)
+		slog.Error("Failed to get leaders", "guild", guildID, "error", err)
 	}
 
 	if len(strokeLeaders) == 0 {
@@ -77,34 +82,38 @@ func (l *Leaderboard) GenerateLeaderboard(guildIDString string) string {
 	notYetPlayed := []string{}
 	skipCounter := 0
 	for i, leader := range strokeLeaders {
-		hasPlayedToday, err := l.query.HasPlayedToday(l.ctx, database.HasPlayedTodayParams{
+		_, err := l.query.HasPlayedToday(l.ctx, database.HasPlayedTodayParams{
 			PlayerID:     leader.PlayerID,
 			TournamentID: tournament.ID,
 		})
-		if err != nil {
-			slog.Error("Failed to check if player has played today", "guild", guildID, "player", leader.PlayerID, err)
+		hasPlayed := true
+		if err == sql.ErrNoRows {
+			hasPlayed = false
+		} else if err != nil {
+			slog.Error("Failed to check if player has played today", "guild", guildID, "player", leader.PlayerID, "error", err)
+			continue
 		}
-		if hasPlayedToday != (database.Round{}) {
-			leaderStrings = append(leaderStrings, fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.Strokes))
+
+		if hasPlayed {
+			leaderStrings = append(leaderStrings, fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes))
 		} else {
-			notYetPlayed = append(notYetPlayed, fmt.Sprintf("<@%d> - %d Total Strokes", leader.PlayerID, leader.Strokes))
+			notYetPlayed = append(notYetPlayed, fmt.Sprintf("<@%d> - %d Total Strokes", leader.PlayerID, leader.TotalStrokes))
 			skipCounter++
 		}
 	}
 
-	leaderString := "Leaders\n" + strings.Join(leaderStrings, "\n") + "\n"
+	leaderString := "Leaders\n" + strings.Join(leaderStrings, "\n")
 
 	notYetPlayedString := ""
 	if len(notYetPlayed) > 0 {
-		rand.Seed(time.Now().UnixNano())
 		rand.Shuffle(len(notYetPlayed), func(i, j int) { notYetPlayed[i], notYetPlayed[j] = notYetPlayed[j], notYetPlayed[i] })
 
-		notYetPlayedString = "Not Played Yet\n" + strings.Join(notYetPlayed, "\n")
+		notYetPlayedString = "\nNot Played Yet\n" + strings.Join(notYetPlayed, "\n") + "\n"
 	}
 
 	hole, err := l.query.GetHardestHole(l.ctx, tournament.ID)
 	if err != nil {
-		slog.Error("Failed to get hardest hole", "tournament", tournament.ID, err)
+		slog.Error("Failed to get hardest hole", "tournament", tournament.ID, "error", err)
 	}
 	holeString := fmt.Sprintf("The hardest hole was %s and took an average of %0.2f strokes", hole.Color, hole.Strokes)
 
@@ -122,11 +131,13 @@ func (l *Leaderboard) GenerateLeaderboard(guildIDString string) string {
 	worstRound, _ := l.query.GetWorstRound(l.ctx, tournament.ID)
 	worstRoundString := fmt.Sprintf("The worst round was %d strokes by <@%d>", worstRound.TotalStrokes, worstRound.PlayerID)
 
-	statsStr := "\n" + "Stats powered by AWS Next Gen Stats" + "\n" + holeString + "\n" + mostCommonString + "\n" + worstRoundString
+	statsStr := "\n\nStats powered by AWS Next Gen Stats" + "\n" + holeString + "\n" + mostCommonString + "\n" + worstRoundString
 
-	all := tournamentString + "\n\n" + leaderString + "\n" + notYetPlayedString + "\n" + statsStr
+	all := tournamentString + "\n\n" + leaderString + notYetPlayedString + statsStr
 
-	l.cache.SetKey(cacheKey, all, 3600)
+	if l.cache != nil {
+		l.cache.SetKey(cacheKey, all, 3600)
+	}
 
 	return all
 }

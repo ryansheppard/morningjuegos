@@ -34,10 +34,20 @@ AND tournament_id = $2
 AND date_trunc('day', inserted_at) = date_trunc('day', $3);
 
 -- name: GetLeaders :many
-SELECT SUM(strokes) AS strokes, player_id FROM round WHERE tournament_id = $1 GROUP BY player_id ORDER BY total_strokes ASC;
+SELECT SUM(total_strokes) AS total_strokes, player_id
+FROM round
+WHERE tournament_id = $1
+AND first_round = TRUE
+GROUP BY player_id
+ORDER BY total_strokes ASC;
 
 -- name: GetWorstRound :one
-SELECT * FROM round WHERE tournament_id = $1 ORDER BY total_strokes DESC LIMIT 1;
+SELECT *
+FROM round
+WHERE tournament_id = $1
+AND first_round = TRUE
+ORDER BY total_strokes DESC
+LIMIT 1;
 
 -- Hole Queries
 -- name: CreateHole :one
@@ -48,6 +58,7 @@ SELECT AVG(strokes) AS strokes, color
 FROM hole 
 LEFT JOIN round ON hole.round_id = round.id
 WHERE round.tournament_id = $1
+AND round.first_round = TRUE
 GROUP BY color
 ORDER BY strokes DESC
 LIMIT 1;
@@ -57,6 +68,7 @@ SELECT COUNT(color) AS strokes, color
 FROM hole
 LEFT JOIN round ON hole.round_id = round.id
 WHERE round.tournament_id = $1
+AND round.first_round = TRUE
 AND hole_number = $2
 GROUP BY color
 ORDER BY strokes DESC

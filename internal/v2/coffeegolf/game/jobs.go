@@ -12,14 +12,14 @@ const defaultStrokes = 20
 func (g *Game) AddMissingRounds() {
 	guildIDs, err := g.query.GetAllGuilds(g.ctx)
 	if err != nil {
-		slog.Error("Failed to get all guilds", err)
+		slog.Error("Failed to get all guilds", "error", err)
 	}
 
 	var tournaments []database.Tournament
 	for _, guildID := range guildIDs {
 		tournament, err := g.query.GetActiveTournament(g.ctx, guildID)
 		if err != nil {
-			slog.Error("Failed to get active tournament", "guild", guildID, err)
+			slog.Error("Failed to get active tournament", "guild", guildID, "error", err)
 			continue
 		}
 		if tournament != (database.Tournament{}) {
@@ -39,7 +39,7 @@ func (g *Game) AddMissingRounds() {
 		numDaysPlayed := (now - start) / 86400
 		players, err := g.query.GetUniquePlayersInTournament(g.ctx, tournament.ID)
 		if err != nil {
-			slog.Error("Failed to get unique players in tournament", "tournament", tournament, err)
+			slog.Error("Failed to get unique players in tournament", "tournament", tournament, "error", err)
 			continue
 		}
 
@@ -52,7 +52,7 @@ func (g *Game) AddMissingRounds() {
 					DateTrunc:    day,
 				})
 				if err != nil {
-					slog.Error("Failed to check if player has played", "player", player, "tournament", tournament, "day", day, err)
+					slog.Error("Failed to check if player has played", "player", player, "tournament", tournament, "day", day, "error", err)
 				}
 				if exists == (database.Round{}) {
 					entry := &database.Round{

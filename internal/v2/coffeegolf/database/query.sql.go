@@ -155,6 +155,7 @@ SELECT AVG(strokes) AS strokes, color
 FROM hole 
 LEFT JOIN round ON hole.round_id = round.id
 WHERE round.tournament_id = $1
+AND round.first_round = TRUE
 GROUP BY color
 ORDER BY strokes DESC
 LIMIT 1
@@ -173,12 +174,17 @@ func (q *Queries) GetHardestHole(ctx context.Context, tournamentID int32) (GetHa
 }
 
 const getLeaders = `-- name: GetLeaders :many
-SELECT SUM(strokes) AS strokes, player_id FROM round WHERE tournament_id = $1 GROUP BY player_id ORDER BY total_strokes ASC
+SELECT SUM(total_strokes) AS total_strokes, player_id
+FROM round
+WHERE tournament_id = $1
+AND first_round = TRUE
+GROUP BY player_id
+ORDER BY total_strokes ASC
 `
 
 type GetLeadersRow struct {
-	Strokes  int64
-	PlayerID int64
+	TotalStrokes int64
+	PlayerID     int64
 }
 
 func (q *Queries) GetLeaders(ctx context.Context, tournamentID int32) ([]GetLeadersRow, error) {
@@ -190,7 +196,7 @@ func (q *Queries) GetLeaders(ctx context.Context, tournamentID int32) ([]GetLead
 	var items []GetLeadersRow
 	for rows.Next() {
 		var i GetLeadersRow
-		if err := rows.Scan(&i.Strokes, &i.PlayerID); err != nil {
+		if err := rows.Scan(&i.TotalStrokes, &i.PlayerID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -209,6 +215,7 @@ SELECT COUNT(color) AS strokes, color
 FROM hole
 LEFT JOIN round ON hole.round_id = round.id
 WHERE round.tournament_id = $1
+AND round.first_round = TRUE
 AND hole_number = $2
 GROUP BY color
 ORDER BY strokes DESC
@@ -260,7 +267,12 @@ func (q *Queries) GetUniquePlayersInTournament(ctx context.Context, tournamentID
 }
 
 const getWorstRound = `-- name: GetWorstRound :one
-SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage FROM round WHERE tournament_id = $1 ORDER BY total_strokes DESC LIMIT 1
+SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage
+FROM round
+WHERE tournament_id = $1
+AND first_round = TRUE
+ORDER BY total_strokes DESC
+LIMIT 1
 `
 
 func (q *Queries) GetWorstRound(ctx context.Context, tournamentID int32) (Round, error) {
