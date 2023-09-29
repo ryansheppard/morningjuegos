@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ryansheppard/morningjuegos/internal/cache"
+	cgQueries "github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/database"
 	coffeegolf "github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/game"
-	cgQueries "github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/queries"
 	"github.com/ryansheppard/morningjuegos/internal/v2/discord"
 )
 
@@ -33,11 +33,7 @@ var twoCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		q, err := cgQueries.NewQueries(db)
-		if err != nil {
-			slog.Error("Error creating queries", err)
-			os.Exit(1)
-		}
+		q := cgQueries.New(db)
 
 		cg := coffeegolf.New(ctx, q, c, db)
 
