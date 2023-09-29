@@ -20,7 +20,7 @@ jobs:
       - run:
           name: push
           command: |
-            export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos:
+            export IMAGE=registry.digitalocean.com/ryansheppard/morningjuegos
             echo $DOCKER_USER | docker login --username $DOCKER_USER --password-stdin registry.digitalocean.com
             docker push $IMAGE:$CIRCLE_BUILD_NUM
             docker push $IMAGE:latest
