@@ -148,28 +148,6 @@ func (q *Queries) GetAllGuilds(ctx context.Context) ([]Guild, error) {
 	return items, nil
 }
 
-const getEasiestHole = `-- name: GetEasiestHole :one
-SELECT AVG(strokes) AS strokes, color
-FROM hole
-LEFT JOIN round ON hole.round_id = round.id
-WHERE round.tournament_id = $1
-GROUP BY color
-ORDER BY strokes ASC
-LIMIT 1
-`
-
-type GetEasiestHoleRow struct {
-	Strokes float64
-	Color   string
-}
-
-func (q *Queries) GetEasiestHole(ctx context.Context, tournamentID int32) (GetEasiestHoleRow, error) {
-	row := q.db.QueryRowContext(ctx, getEasiestHole, tournamentID)
-	var i GetEasiestHoleRow
-	err := row.Scan(&i.Strokes, &i.Color)
-	return i, err
-}
-
 const getHardestHole = `-- name: GetHardestHole :one
 SELECT AVG(strokes) AS strokes, color
 FROM hole 
@@ -222,6 +200,34 @@ func (q *Queries) GetLeaders(ctx context.Context, tournamentID int32) ([]GetLead
 		return nil, err
 	}
 	return items, nil
+}
+
+const getMostCommonHoleForNumber = `-- name: GetMostCommonHoleForNumber :one
+SELECT COUNT(color) AS strokes, color
+FROM hole
+LEFT JOIN round ON hole.round_id = round.id
+WHERE round.tournament_id = $1
+AND hole_number = $2
+GROUP BY color
+ORDER BY strokes DESC
+LIMIT 1
+`
+
+type GetMostCommonHoleForNumberParams struct {
+	TournamentID int32
+	HoleNumber   int32
+}
+
+type GetMostCommonHoleForNumberRow struct {
+	Strokes int64
+	Color   string
+}
+
+func (q *Queries) GetMostCommonHoleForNumber(ctx context.Context, arg GetMostCommonHoleForNumberParams) (GetMostCommonHoleForNumberRow, error) {
+	row := q.db.QueryRowContext(ctx, getMostCommonHoleForNumber, arg.TournamentID, arg.HoleNumber)
+	var i GetMostCommonHoleForNumberRow
+	err := row.Scan(&i.Strokes, &i.Color)
+	return i, err
 }
 
 const getWorstRound = `-- name: GetWorstRound :one

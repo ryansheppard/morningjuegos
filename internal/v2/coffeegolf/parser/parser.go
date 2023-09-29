@@ -1,4 +1,4 @@
-package coffeegolf
+package parser
 
 import (
 	"context"
@@ -47,7 +47,11 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (*database.Round, []*d
 
 		// There has to be a better way to get or create
 		tournament, err := p.queries.GetActiveTournament(p.ctx, guildID)
-		if err != nil && tournament.ID == 0 {
+		if err != nil {
+			slog.Error("Failed to get active tournament", "guild", guildID, err)
+			return nil, nil, err
+		}
+		if tournament == (database.Tournament{}) {
 			slog.Info("No active tournament found, creating one")
 			tournament, err = p.queries.CreateTournament(p.ctx, database.CreateTournamentParams{
 				GuildID: guildID,

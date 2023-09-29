@@ -42,11 +42,12 @@ GROUP BY color
 ORDER BY strokes DESC
 LIMIT 1;
 
--- name: GetEasiestHole :one
-SELECT AVG(strokes) AS strokes, color
+-- name: GetMostCommonHoleForNumber :one
+SELECT COUNT(color) AS strokes, color
 FROM hole
 LEFT JOIN round ON hole.round_id = round.id
 WHERE round.tournament_id = $1
+AND hole_number = $2
 GROUP BY color
-ORDER BY strokes ASC
+ORDER BY strokes DESC
 LIMIT 1;

@@ -1,4 +1,4 @@
-package coffeegolf
+package parser
 
 import (
 	"context"
