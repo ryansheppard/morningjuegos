@@ -32,17 +32,43 @@ func New(ctx context.Context, query *database.Queries, cache *cache.Cache, db *s
 }
 
 func (g *Game) LeaderboardCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	params := leaderboard.GenerateLeaderboardParams{
+		GuildID: i.GuildID,
+	}
+	options := i.ApplicationCommandData().Options
+	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+	for _, opt := range options {
+		optionMap[opt.Name] = opt
+	}
+
+	if option, ok := optionMap["date-option"]; ok {
+		params.AddDate(option.StringValue())
+	}
+
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: g.leaderboard.GenerateLeaderboard(i.GuildID),
+			Content: g.leaderboard.GenerateLeaderboard(params),
+		},
+	})
+}
+
+func (g *Game) StatsCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: g.leaderboard.GenerateStats(i.GuildID),
 		},
 	})
 }
 
 func (g *Game) HelpText() string {
 	return `
-Possible responses are: 
+Use /coffeegolf to the leaderboard for the current tournament
+Use /coffeegolf <date> to get the leaderboard for a specific date. Date format is YYYY-MM-DD
+Use /coffeestats to get the stats for the current tournament
+
+When posting a Coffee Golf message, the possible reactions are: 
 - 👍: First round
 - 👌: Bonus round
 - 🤯: Parsed the message but failed to insert in to the database
@@ -66,9 +92,21 @@ func (g *Game) GetCommands() []*discordgo.ApplicationCommand {
 		{
 			Name:        "coffeegolf",
 			Description: "Gets the leaderboard for Coffee Golf",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "date-option",
+					Description: "The date to get the stats for",
+					Required:    false,
+				},
+			},
 		},
 		{
-			Name:        "coffeegolfhelp",
+			Name:        "coffeestats",
+			Description: "Gets the stats for Coffee Golf",
+		},
+		{
+			Name:        "coffeehelp",
 			Description: "Gets the help for Coffee Golf",
 		},
 	}
@@ -76,7 +114,8 @@ func (g *Game) GetCommands() []*discordgo.ApplicationCommand {
 
 func (g *Game) GetHandlers() map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	return map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"coffeegolf":     g.LeaderboardCmd,
-		"coffeegolfhelp": g.HelpCmd,
+		"coffeegolf":  g.LeaderboardCmd,
+		"coffeestats": g.StatsCmd,
+		"coffeehelp":  g.HelpCmd,
 	}
 }

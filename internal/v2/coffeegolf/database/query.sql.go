@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -173,22 +174,55 @@ func (q *Queries) GetHardestHole(ctx context.Context, tournamentID int32) (GetHa
 	return i, err
 }
 
+const getHoleInOneLeader = `-- name: GetHoleInOneLeader :one
+SELECT COUNT(*) AS count, round.player_id
+FROM hole
+LEFT JOIN round ON hole.round_id = round.id
+WHERE round.tournament_id = $1
+AND round.first_round = TRUE
+AND round.player_id IS NOT NULL
+AND hole.strokes = 1
+GROUP BY round.player_id
+ORDER BY count DESC
+LIMIT 1
+`
+
+type GetHoleInOneLeaderRow struct {
+	Count    int64
+	PlayerID sql.NullInt64
+}
+
+func (q *Queries) GetHoleInOneLeader(ctx context.Context, tournamentID int32) (GetHoleInOneLeaderRow, error) {
+	row := q.db.QueryRowContext(ctx, getHoleInOneLeader, tournamentID)
+	var i GetHoleInOneLeaderRow
+	err := row.Scan(&i.Count, &i.PlayerID)
+	return i, err
+}
+
 const getLeaders = `-- name: GetLeaders :many
 SELECT SUM(total_strokes) AS total_strokes, player_id
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
+AND inserted_at > $2
+AND inserted_at < $3
 GROUP BY player_id
 ORDER BY total_strokes ASC
 `
+
+type GetLeadersParams struct {
+	TournamentID int32
+	InsertedAt   time.Time
+	InsertedAt_2 time.Time
+}
 
 type GetLeadersRow struct {
 	TotalStrokes int64
 	PlayerID     int64
 }
 
-func (q *Queries) GetLeaders(ctx context.Context, tournamentID int32) ([]GetLeadersRow, error) {
-	rows, err := q.db.QueryContext(ctx, getLeaders, tournamentID)
+func (q *Queries) GetLeaders(ctx context.Context, arg GetLeadersParams) ([]GetLeadersRow, error) {
+	rows, err := q.db.QueryContext(ctx, getLeaders, arg.TournamentID, arg.InsertedAt, arg.InsertedAt_2)
 	if err != nil {
 		return nil, err
 	}
@@ -237,6 +271,49 @@ func (q *Queries) GetMostCommonHoleForNumber(ctx context.Context, arg GetMostCom
 	var i GetMostCommonHoleForNumberRow
 	err := row.Scan(&i.Strokes, &i.Color)
 	return i, err
+}
+
+const getPlacementsForPeriod = `-- name: GetPlacementsForPeriod :many
+SELECT SUM(total_strokes) AS total_strokes, player_id
+FROM round
+WHERE tournament_id = $1
+AND first_round = TRUE
+AND inserted_at < $2
+GROUP BY player_id
+ORDER BY total_strokes ASC
+`
+
+type GetPlacementsForPeriodParams struct {
+	TournamentID int32
+	InsertedAt   time.Time
+}
+
+type GetPlacementsForPeriodRow struct {
+	TotalStrokes int64
+	PlayerID     int64
+}
+
+func (q *Queries) GetPlacementsForPeriod(ctx context.Context, arg GetPlacementsForPeriodParams) ([]GetPlacementsForPeriodRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPlacementsForPeriod, arg.TournamentID, arg.InsertedAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPlacementsForPeriodRow
+	for rows.Next() {
+		var i GetPlacementsForPeriodRow
+		if err := rows.Scan(&i.TotalStrokes, &i.PlayerID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUniquePlayersInTournament = `-- name: GetUniquePlayersInTournament :many

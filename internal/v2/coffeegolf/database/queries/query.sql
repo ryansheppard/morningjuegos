@@ -38,6 +38,17 @@ SELECT SUM(total_strokes) AS total_strokes, player_id
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
+AND inserted_at > $2
+AND inserted_at < $3
+GROUP BY player_id
+ORDER BY total_strokes ASC;
+
+-- name: GetPlacementsForPeriod :many
+SELECT SUM(total_strokes) AS total_strokes, player_id
+FROM round
+WHERE tournament_id = $1
+AND first_round = TRUE
+AND inserted_at < $2
 GROUP BY player_id
 ORDER BY total_strokes ASC;
 
@@ -72,4 +83,16 @@ AND round.first_round = TRUE
 AND hole_number = $2
 GROUP BY color
 ORDER BY strokes DESC
+LIMIT 1;
+
+-- name: GetHoleInOneLeader :one
+SELECT COUNT(*) AS count, round.player_id
+FROM hole
+LEFT JOIN round ON hole.round_id = round.id
+WHERE round.tournament_id = $1
+AND round.first_round = TRUE
+AND round.player_id IS NOT NULL
+AND hole.strokes = 1
+GROUP BY round.player_id
+ORDER BY count DESC
 LIMIT 1;

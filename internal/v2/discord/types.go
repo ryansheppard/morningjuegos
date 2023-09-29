@@ -57,6 +57,7 @@ func (d *Discord) Configure() error {
 }
 
 func (d *Discord) AddCommand(command *discordgo.ApplicationCommand) {
+	slog.Info("Adding command", "command", command.Name)
 	_, err := d.Discord.ApplicationCommandCreate(d.AppID, "", command)
 	if err != nil {
 		slog.Error("Cannot create command", "command", command.Name, "error", err)
