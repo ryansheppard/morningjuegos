@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	Failed               = -1
 	FirstRound           = 0
 	BonusRound           = 1
 	ParsedButNotInserted = 2
@@ -25,10 +26,11 @@ type Parser struct {
 	db      *sql.DB
 }
 
-func New(ctx context.Context, queries *database.Queries) *Parser {
+func New(ctx context.Context, queries *database.Queries, db *sql.DB) *Parser {
 	return &Parser{
 		ctx:     ctx,
 		queries: queries,
+		db:      db,
 	}
 }
 
@@ -39,7 +41,7 @@ func (p *Parser) isCoffeeGolf(message string) bool {
 
 // TODO need to actually insert the data
 // ParseGame parses a Coffee Golf game from a Discord message
-func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int, err error) {
+func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 	message := m.Content
 
 	isCoffeGolf := p.isCoffeeGolf(message)
@@ -47,18 +49,18 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int, err error
 	if isCoffeGolf {
 		guildID, err := strconv.ParseInt(m.GuildID, 10, 64)
 		if err != nil {
-			return -1, err
+			return Failed
 		}
 
 		playerID, err := strconv.ParseInt(m.Author.ID, 10, 64)
 		if err != nil {
-			return -1, err
+			return Failed
 		}
 
 		tournament, err := p.queries.GetActiveTournament(p.ctx, guildID)
 		if err != nil {
 			slog.Error("Failed to get active tournament", "guild", guildID, err)
-			return -1, err
+			return Failed
 		}
 		if tournament == (database.Tournament{}) {
 			slog.Info("No active tournament found, creating one")
@@ -66,7 +68,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int, err error
 				GuildID: guildID,
 			})
 			if err != nil {
-				return -1, err
+				return Failed
 			}
 		}
 
@@ -74,7 +76,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int, err error
 
 		if err != nil {
 			slog.Error("Failed to parse round", "round", round, err)
-			return -1, err
+			return Failed
 		}
 
 		hasPlayedToday, err := p.queries.HasPlayedToday(p.ctx, database.HasPlayedTodayParams{
@@ -84,7 +86,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int, err error
 
 		if err != nil {
 			slog.Error("Failed to check if player has played today", "player", playerID, "tournament", tournament.ID, err)
-			return ParsedButNotInserted, err
+			return ParsedButNotInserted
 		}
 
 		firstRound := true
@@ -95,7 +97,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int, err error
 		tx, err := p.db.Begin()
 		if err != nil {
 			slog.Error("Failed to begin transaction", err)
-			return ParsedButNotInserted, err
+			return ParsedButNotInserted
 		}
 		defer tx.Rollback()
 
@@ -112,7 +114,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int, err error
 
 		if err != nil {
 			slog.Error("Failed to insert round", "round", round, err)
-			return ParsedButNotInserted, err
+			return ParsedButNotInserted
 		}
 
 		for _, hole := range holes {
@@ -125,24 +127,24 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int, err error
 			})
 			if err != nil {
 				slog.Error("Failed to insert hole", "hole", hole, err)
-				return ParsedButNotInserted, err
+				return ParsedButNotInserted
 			}
 		}
 
 		err = tx.Commit()
 		if err != nil {
 			slog.Error("Failed to commit transaction", err)
-			return ParsedButNotInserted, err
+			return ParsedButNotInserted
 		}
 
 		if firstRound {
-			return FirstRound, nil
+			return FirstRound
 		}
 
-		return BonusRound, nil
+		return BonusRound
 	}
 
-	return NotCoffeeGolf, nil
+	return NotCoffeeGolf
 }
 
 // NewRoundFromString returns a new Round from a string

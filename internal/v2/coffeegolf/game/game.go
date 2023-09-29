@@ -2,6 +2,7 @@ package game
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/ryansheppard/morningjuegos/internal/cache"
@@ -14,18 +15,18 @@ type Game struct {
 	ctx         context.Context
 	query       *database.Queries
 	cache       *cache.Cache
-	parser      *parser.Parser
+	Parser      *parser.Parser
 	leaderboard *leaderboard.Leaderboard
 }
 
-func New(ctx context.Context, query *database.Queries, cache *cache.Cache) *Game {
-	parser := parser.New(ctx, query)
+func New(ctx context.Context, query *database.Queries, cache *cache.Cache, db *sql.DB) *Game {
+	parser := parser.New(ctx, query, db)
 	leaderboard := leaderboard.New(ctx, query, cache)
 	return &Game{
 		ctx:         ctx,
 		query:       query,
 		cache:       cache,
-		parser:      parser,
+		Parser:      parser,
 		leaderboard: leaderboard,
 	}
 }
