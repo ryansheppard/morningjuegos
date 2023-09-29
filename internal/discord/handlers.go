@@ -13,8 +13,8 @@ func (d *Discord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate
 	if parsed {
 		if inserted {
 			s.MessageReactionAdd(m.ChannelID, m.ID, "👍")
+		} else {
+			s.MessageReactionAdd(m.ChannelID, m.ID, "👎")
 		}
-	} else {
-		s.MessageReactionAdd(m.ChannelID, m.ID, "👎")
 	}
 }
