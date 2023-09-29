@@ -15,7 +15,7 @@ func isCoffeeGolf(message string) bool {
 }
 
 // ParseGame parses a Coffee Golf game from a Discord message
-func (cg *CoffeeGolf) ParseGame(m *discordgo.MessageCreate) bool {
+func (cg *CoffeeGolf) ParseGame(m *discordgo.MessageCreate) (bool, bool) {
 	message := m.Content
 	isCoffeGolf := isCoffeeGolf(m.Content)
 	if isCoffeGolf {
@@ -26,9 +26,9 @@ func (cg *CoffeeGolf) ParseGame(m *discordgo.MessageCreate) bool {
 		}
 		round := NewRoundFromString(message, m.GuildID, m.Member.Nick, m.Author.ID, tournament.ID)
 
-		return cg.Query.Insert(round)
+		return cg.Query.Insert(round), true
 	}
-	return false
+	return false, false
 }
 
 // NewRoundFromString returns a new Round from a string
