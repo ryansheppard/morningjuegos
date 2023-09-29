@@ -16,7 +16,6 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/v2/discord"
 )
 
-// twoCmd represents the bot command
 var twoCmd = &cobra.Command{
 	Use:   "two",
 	Short: "Runs the v2 discord bot",
