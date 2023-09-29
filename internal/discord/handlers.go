@@ -10,11 +10,9 @@ func (d *Discord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate
 	}
 
 	parsed := d.CoffeeGolf.ParseGame(m)
-	if parsed.IsGame {
-		if parsed.Inserted {
-			s.MessageReactionAdd(m.ChannelID, m.ID, "👍")
-		} else {
-			s.MessageReactionAdd(m.ChannelID, m.ID, "👎")
-		}
+	if parsed {
+		s.MessageReactionAdd(m.ChannelID, m.ID, "👍")
+	} else {
+		s.MessageReactionAdd(m.ChannelID, m.ID, "👎")
 	}
 }

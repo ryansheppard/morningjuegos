@@ -8,8 +8,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/google/uuid"
-
-	"github.com/ryansheppard/morningjuegos/internal/game"
 )
 
 func isCoffeeGolf(message string) bool {
@@ -17,7 +15,7 @@ func isCoffeeGolf(message string) bool {
 }
 
 // ParseGame parses a Coffee Golf game from a Discord message
-func (cg *CoffeeGolf) ParseGame(m *discordgo.MessageCreate) game.ParserResponse {
+func (cg *CoffeeGolf) ParseGame(m *discordgo.MessageCreate) bool {
 	message := m.Content
 	isCoffeGolf := isCoffeeGolf(m.Content)
 	if isCoffeGolf {
@@ -28,17 +26,9 @@ func (cg *CoffeeGolf) ParseGame(m *discordgo.MessageCreate) game.ParserResponse 
 		}
 		round := NewRoundFromString(message, m.GuildID, m.Member.Nick, m.Author.ID, tournament.ID)
 
-		inserted := cg.Query.Insert(round)
-		return game.ParserResponse{
-			IsGame:   true,
-			Inserted: inserted,
-		}
+		return cg.Query.Insert(round)
 	}
-
-	return game.ParserResponse{
-		IsGame:   false,
-		Inserted: false,
-	}
+	return false
 }
 
 // NewRoundFromString returns a new Round from a string
