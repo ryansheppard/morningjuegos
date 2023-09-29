@@ -12,6 +12,9 @@ SELECT * FROM tournament WHERE guild_id = $1 AND start_time < NOW() AND end_time
 -- name: CreateTournament :one
 INSERT INTO tournament (guild_id, start_time, end_time) VALUES ($1, $2, $3) RETURNING *;
 
+-- name: GetUniquePlayersInTournament :many
+SELECT DISTINCT player_id FROM round WHERE tournament_id = $1;
+
 -- Round Queries
 -- name: CreateRound :one
 INSERT INTO round (tournament_id, player_id, total_strokes, original_date, first_round) VALUES ($1, $2, $3, $4, $5) RETURNING *;
@@ -22,6 +25,13 @@ FROM round
 WHERE player_id = $1
 AND tournament_id = $2
 AND date_trunc('day', inserted_at) = date_trunc('day', NOW());
+
+-- name: HasPlayed :one
+SELECT *
+FROM round
+WHERE player_id = $1
+AND tournament_id = $2
+AND date_trunc('day', inserted_at) = date_trunc('day', $3);
 
 -- name: GetLeaders :many
 SELECT SUM(strokes) AS strokes, player_id FROM round WHERE tournament_id = $1 GROUP BY player_id ORDER BY total_strokes ASC;

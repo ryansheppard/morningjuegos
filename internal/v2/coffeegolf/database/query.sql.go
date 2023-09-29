@@ -230,12 +230,69 @@ func (q *Queries) GetMostCommonHoleForNumber(ctx context.Context, arg GetMostCom
 	return i, err
 }
 
+const getUniquePlayersInTournament = `-- name: GetUniquePlayersInTournament :many
+SELECT DISTINCT player_id FROM round WHERE tournament_id = $1
+`
+
+func (q *Queries) GetUniquePlayersInTournament(ctx context.Context, tournamentID int32) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, getUniquePlayersInTournament, tournamentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var player_id int64
+		if err := rows.Scan(&player_id); err != nil {
+			return nil, err
+		}
+		items = append(items, player_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getWorstRound = `-- name: GetWorstRound :one
 SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage FROM round WHERE tournament_id = $1 ORDER BY total_strokes DESC LIMIT 1
 `
 
 func (q *Queries) GetWorstRound(ctx context.Context, tournamentID int32) (Round, error) {
 	row := q.db.QueryRowContext(ctx, getWorstRound, tournamentID)
+	var i Round
+	err := row.Scan(
+		&i.ID,
+		&i.TournamentID,
+		&i.PlayerID,
+		&i.TotalStrokes,
+		&i.OriginalDate,
+		&i.InsertedAt,
+		&i.FirstRound,
+		&i.Percentage,
+	)
+	return i, err
+}
+
+const hasPlayed = `-- name: HasPlayed :one
+SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage
+FROM round
+WHERE player_id = $1
+AND tournament_id = $2
+AND date_trunc('day', inserted_at) = date_trunc('day', $3)
+`
+
+type HasPlayedParams struct {
+	PlayerID     int64
+	TournamentID int32
+	DateTrunc    int64
+}
+
+func (q *Queries) HasPlayed(ctx context.Context, arg HasPlayedParams) (Round, error) {
+	row := q.db.QueryRowContext(ctx, hasPlayed, arg.PlayerID, arg.TournamentID, arg.DateTrunc)
 	var i Round
 	err := row.Scan(
 		&i.ID,

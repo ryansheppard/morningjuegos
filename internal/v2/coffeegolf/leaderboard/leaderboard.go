@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,7 +32,13 @@ func (l *Leaderboard) getLeaderboardCacheKey(guildID int64) string {
 }
 
 // TODO: Chunk this function up
-func (l *Leaderboard) generateLeaderboard(guildID int64) string {
+func (l *Leaderboard) GenerateLeaderboard(guildIDString string) string {
+	guildID, err := strconv.ParseInt(guildIDString, 10, 64)
+	if err != nil {
+		slog.Error("Failed to parse guildID", "guild", guildIDString, err)
+		return "Could not generate a leaderboard for this discord server"
+	}
+
 	tournament, err := l.query.GetActiveTournament(l.ctx, guildID)
 	if err != nil {
 		slog.Error("Failed to get active tournament", "guild", guildID, err)
