@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/database"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 )
 
 const defaultStrokes = 20

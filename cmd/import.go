@@ -9,8 +9,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/database"
-	cgQueries "github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/database"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
+	cgQueries "github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	"github.com/spf13/cobra"
 
 	_ "github.com/lib/pq"

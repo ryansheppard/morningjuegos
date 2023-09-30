@@ -2,6 +2,7 @@ package discord
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/parser"
 )
 
 func (d *Discord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -9,12 +10,18 @@ func (d *Discord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate
 		return
 	}
 
-	inserted, parsed := d.CoffeeGolf.ParseGame(m)
-	if parsed {
-		if inserted {
-			s.MessageReactionAdd(m.ChannelID, m.ID, "👍")
-		} else {
-			s.MessageReactionAdd(m.ChannelID, m.ID, "👎")
-		}
+	status := d.CoffeeGolf.Parser.ParseMessage(m)
+	switch status {
+	case parser.FirstRound:
+		s.MessageReactionAdd(m.ChannelID, m.ID, "👍")
+	case parser.BonusRound:
+		s.MessageReactionAdd(m.ChannelID, m.ID, "👌")
+	case parser.ParsedButNotInserted:
+		s.MessageReactionAdd(m.ChannelID, m.ID, "🤯")
+	case parser.Failed:
+		s.MessageReactionAdd(m.ChannelID, m.ID, "🖕")
+	case parser.NotCoffeeGolf:
+	default:
+		s.MessageReactionAdd(m.ChannelID, m.ID, "🤬")
 	}
 }

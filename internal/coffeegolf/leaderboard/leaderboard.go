@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ryansheppard/morningjuegos/internal/v2/cache"
-	"github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/database"
+	"github.com/ryansheppard/morningjuegos/internal/cache"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 )
 
 var (

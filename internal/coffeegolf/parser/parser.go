@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/database"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 )
 
 const (

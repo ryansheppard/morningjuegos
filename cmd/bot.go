@@ -2,53 +2,67 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
+	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
-	"time"
 
-	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
 
+	_ "github.com/lib/pq"
 	"github.com/ryansheppard/morningjuegos/internal/cache"
-	"github.com/ryansheppard/morningjuegos/internal/coffeegolf"
-	"github.com/ryansheppard/morningjuegos/internal/database"
+	cgQueries "github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
+	coffeegolf "github.com/ryansheppard/morningjuegos/internal/coffeegolf/game"
 	"github.com/ryansheppard/morningjuegos/internal/discord"
 )
 
-// botCmd represents the bot command
 var botCmd = &cobra.Command{
 	Use:   "bot",
 	Short: "Runs the discord bot",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
+		var err error
 
 		redisAddr := os.Getenv("REDIS_ADDR")
-		c := cache.New(ctx, redisAddr, 0)
-
-		dbPath := os.Getenv("DB_PATH")
-		db, err := database.CreateConnection(dbPath)
-		if err != nil {
-			panic(err)
+		redisDB := os.Getenv("REDIS_DB")
+		redisDBInt := 0
+		if redisDB != "" {
+			redisDBInt, err = strconv.Atoi(redisDB)
+			if err != nil {
+				slog.Error("Error converting redis db to int", "error", err)
+			}
 		}
 
-		q := coffeegolf.NewQuery(ctx, db, c)
+		c := cache.New(ctx, redisAddr, redisDBInt)
 
-		cg := coffeegolf.NewCoffeeGolf(q, c)
+		dsn := os.Getenv("DB_DSN")
+		db, err := sql.Open("postgres", dsn)
+		if err != nil {
+			slog.Error("Error opening database connection", "error", err)
+			os.Exit(1)
+		}
 
-		s := gocron.NewScheduler(time.UTC)
-		s.Every(1).Minute().Do(cg.AddMissingRounds)
-		s.Every(15).Minute().Do(cg.AddTournamentWinners)
-		s.StartAsync()
+		q := cgQueries.New(db)
+
+		cg := coffeegolf.New(ctx, q, c, db)
 
 		token := os.Getenv("DISCORD_TOKEN")
 		appID := os.Getenv("DISCORD_APP_ID")
-		d := discord.NewDiscord(token, appID, cg)
+		d, err := discord.NewDiscord(token, appID, cg)
+		if err != nil {
+			slog.Error("Error creating discord", "error", err)
+			os.Exit(1)
+		}
 
-		d.Configure()
+		err = d.Configure()
+		if err != nil {
+			slog.Error("Error configuring discord", "error", err)
+			os.Exit(1)
+		}
 
-		fmt.Println("MorningJuegos is now running. Press CTRL-C to exit.")
+		slog.Info("MorningJuegos is now running. Press CTRL-C to exit.")
 		sc := make(chan os.Signal, 1)
 		signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 		<-sc

@@ -1,49 +1,42 @@
 package discord
 
 import (
-	"fmt"
+	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/ryansheppard/morningjuegos/internal/coffeegolf"
+	cg "github.com/ryansheppard/morningjuegos/internal/coffeegolf/game"
 )
 
 type Discord struct {
 	Discord    *discordgo.Session
 	AppID      string
-	CoffeeGolf *coffeegolf.CoffeeGolf
+	CoffeeGolf *cg.Game
 }
 
-func NewDiscord(token string, appID string, cg *coffeegolf.CoffeeGolf) *Discord {
+func NewDiscord(token string, appID string, cg *cg.Game) (*Discord, error) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
-		panic(err)
+		slog.Error("Error creating Discord session", "error", err)
+		return nil, err
 	}
 
 	return &Discord{
 		Discord:    dg,
 		AppID:      appID,
 		CoffeeGolf: cg,
-	}
+	}, nil
 }
 
 func (d *Discord) Configure() error {
-	commands := []*discordgo.ApplicationCommand{
-		{
-			Name:        "coffeegolf",
-			Description: "Gets the leaderboard for Coffee Golf",
-		},
-	}
-
-	handlers := map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"coffeegolf": d.CoffeeGolf.LeaderboardCmd,
-	}
-	for _, command := range commands {
+	for _, command := range d.CoffeeGolf.GetCommands() {
 		d.AddCommand(command)
 	}
 
-	for _, handler := range handlers {
-		d.AddCommandHandler(handler)
-	}
+	d.Discord.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		if h, ok := d.CoffeeGolf.GetHandlers()[i.ApplicationCommandData().Name]; ok {
+			h(s, i)
+		}
+	})
 
 	d.Discord.AddHandler(d.messageCreate)
 
@@ -56,7 +49,7 @@ func (d *Discord) Configure() error {
 
 	err := d.Discord.Open()
 	if err != nil {
-		fmt.Println("Error opening Discord session: ", err)
+		slog.Error("Error opening Discord session: ", "error", err)
 		return err
 	}
 
@@ -64,12 +57,9 @@ func (d *Discord) Configure() error {
 }
 
 func (d *Discord) AddCommand(command *discordgo.ApplicationCommand) {
+	slog.Info("Adding command", "command", command.Name)
 	_, err := d.Discord.ApplicationCommandCreate(d.AppID, "", command)
 	if err != nil {
-		fmt.Printf("Cannot create '%v' command: %v", command.Name, err)
+		slog.Error("Cannot create command", "command", command.Name, "error", err)
 	}
-}
-
-func (d *Discord) AddCommandHandler(handler func(*discordgo.Session, *discordgo.InteractionCreate)) {
-	d.Discord.AddHandler(handler)
 }

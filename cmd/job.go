@@ -14,14 +14,14 @@ import (
 	"github.com/spf13/cobra"
 
 	_ "github.com/lib/pq"
-	"github.com/ryansheppard/morningjuegos/internal/v2/cache"
-	cgQueries "github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/database"
-	coffeegolf "github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/game"
+	"github.com/ryansheppard/morningjuegos/internal/cache"
+	cgQueries "github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
+	coffeegolf "github.com/ryansheppard/morningjuegos/internal/coffeegolf/game"
 )
 
-var jobTwoCmd = &cobra.Command{
-	Use:   "jobtwo",
-	Short: "Runs the v2 discord jobs",
+var jobsCmd = &cobra.Command{
+	Use:   "jobs",
+	Short: "Runs the discord jobs",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
 		var err error
@@ -70,5 +70,5 @@ var jobTwoCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(jobTwoCmd)
+	rootCmd.AddCommand(jobsCmd)
 }

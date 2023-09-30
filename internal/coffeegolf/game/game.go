@@ -5,10 +5,10 @@ import (
 	"database/sql"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/ryansheppard/morningjuegos/internal/v2/cache"
-	"github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/database"
-	"github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/leaderboard"
-	"github.com/ryansheppard/morningjuegos/internal/v2/coffeegolf/parser"
+	"github.com/ryansheppard/morningjuegos/internal/cache"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/leaderboard"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/parser"
 )
 
 type Game struct {

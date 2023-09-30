@@ -22,7 +22,7 @@ spec:
           command:
             - "/morningjuegos"
           args:
-            - "jobtwo"
+            - "jobs"
           env:
             # - name: REDIS_ADDR
             #   value: redis.default.svc.cluster.local:6379

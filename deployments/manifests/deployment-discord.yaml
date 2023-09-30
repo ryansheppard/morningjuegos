@@ -22,7 +22,7 @@ spec:
           command:
             - "/morningjuegos"
           args:
-            - "two"
+            - "bot"
           env:
             # - name: DB_PATH
             #   value: /etc/morningjuegos/db.sqlite3

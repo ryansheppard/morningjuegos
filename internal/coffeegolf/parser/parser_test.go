@@ -1,7 +1,10 @@
-package coffeegolf
+package parser
 
 import (
+	"context"
 	"testing"
+
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 )
 
 const testString = `Coffee Golf - Sept 18
@@ -14,7 +17,9 @@ const testString = `Coffee Golf - Sept 18
 func TestIsCoffeeGolf(t *testing.T) {
 	t.Parallel()
 
-	if !isCoffeeGolf(testString) {
+	p := New(context.TODO(), nil, nil)
+
+	if !p.isCoffeeGolf(testString) {
 		t.Error("Expected true, got false")
 	}
 }
@@ -22,7 +27,9 @@ func TestIsCoffeeGolf(t *testing.T) {
 func TestIsNotCoffeeGolf(t *testing.T) {
 	t.Parallel()
 
-	if isCoffeeGolf("Connections") {
+	p := New(context.TODO(), nil, nil)
+
+	if p.isCoffeeGolf("Connections") {
 		t.Error("Expected true, got false")
 	}
 }
@@ -43,7 +50,7 @@ func TestParseTotalStrikes(t *testing.T) {
 
 	line := "20 Strokes"
 	want := 20
-	got := parseTotalStrikes(line)
+	got, _ := parseTotalStrikes(line)
 	if want != got {
 		t.Errorf("Expected %d, got %d", want, got)
 	}
@@ -148,39 +155,27 @@ func TestParseDigitEmojiInRange(t *testing.T) {
 func TestParseStrokeLines(t *testing.T) {
 	t.Parallel()
 
-	modelID := "test1234"
-	guildID := "12345"
-	tournamentID := "test56"
 	holeLine := "🟨🟥🟪🟩🟦"
 	strokesLine := "7️⃣5️⃣3️⃣2️⃣3️⃣"
 
-	got := parseStrokeLines(modelID, guildID, tournamentID, holeLine, strokesLine)
-	want := []Hole{
-		{ID: "test1234", GuildID: "12345", TournamentID: "test56", RoundID: "test1234", Color: "yellow", Strokes: 7, HoleIndex: 0},
-		{ID: "test1234", GuildID: "12345", TournamentID: "test56", RoundID: "test1234", Color: "red", Strokes: 5, HoleIndex: 1},
-		{ID: "test1234", GuildID: "12345", TournamentID: "test56", RoundID: "test1234", Color: "purple", Strokes: 3, HoleIndex: 2},
-		{ID: "test1234", GuildID: "12345", TournamentID: "test56", RoundID: "test1234", Color: "green", Strokes: 2, HoleIndex: 3},
-		{ID: "test1234", GuildID: "12345", TournamentID: "test56", RoundID: "test1234", Color: "blue", Strokes: 3, HoleIndex: 4},
+	got := parseStrokeLines(holeLine, strokesLine)
+	want := []database.Hole{
+		{Color: "yellow", Strokes: 7, HoleNumber: 0},
+		{Color: "red", Strokes: 5, HoleNumber: 1},
+		{Color: "purple", Strokes: 3, HoleNumber: 2},
+		{Color: "green", Strokes: 2, HoleNumber: 3},
+		{Color: "blue", Strokes: 3, HoleNumber: 4},
 	}
 
 	for i, hole := range want {
 		if hole.RoundID != got[i].RoundID {
-			t.Errorf("Expected %s, got %s", hole.ID, got[i].ID)
-		}
-		if hole.GuildID != got[i].GuildID {
-			t.Errorf("Expected %s, got %s", hole.GuildID, got[i].GuildID)
-		}
-		if hole.TournamentID != got[i].TournamentID {
-			t.Errorf("Expected %s, got %s", hole.TournamentID, got[i].TournamentID)
+			t.Errorf("Expected %d, got %d", hole.ID, got[i].ID)
 		}
 		if hole.Color != got[i].Color {
 			t.Errorf("Expected %s, got %s", hole.Color, got[i].Color)
 		}
 		if hole.Strokes != got[i].Strokes {
 			t.Errorf("Expected %d, got %d", hole.Strokes, got[i].Strokes)
-		}
-		if hole.HoleIndex != got[i].HoleIndex {
-			t.Errorf("Expected %d, got %d", hole.HoleIndex, got[i].HoleIndex)
 		}
 	}
 
