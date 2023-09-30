@@ -491,29 +491,30 @@ func (q *Queries) GetTournamentPlacements(ctx context.Context, tournamentID int3
 }
 
 const getTournamentPlacementsByPosition = `-- name: GetTournamentPlacementsByPosition :one
-SELECT COUNT(*) AS count, tournament_placement, player_id
+SELECT COUNT(*) AS count, tournament_placement
 FROM tournament_placement
 LEFT JOIN tournament ON tournament_placement.tournament_id = tournament.id
 WHERE tournament.guild_id = $1
 AND player_id = $2
+AND tournament_placement == $3
 GROUP BY tournament_placement, player_id
 `
 
 type GetTournamentPlacementsByPositionParams struct {
-	GuildID  int64
-	PlayerID int64
+	GuildID             int64
+	PlayerID            int64
+	TournamentPlacement int32
 }
 
 type GetTournamentPlacementsByPositionRow struct {
 	Count               int64
 	TournamentPlacement int32
-	PlayerID            int64
 }
 
 func (q *Queries) GetTournamentPlacementsByPosition(ctx context.Context, arg GetTournamentPlacementsByPositionParams) (GetTournamentPlacementsByPositionRow, error) {
-	row := q.db.QueryRowContext(ctx, getTournamentPlacementsByPosition, arg.GuildID, arg.PlayerID)
+	row := q.db.QueryRowContext(ctx, getTournamentPlacementsByPosition, arg.GuildID, arg.PlayerID, arg.TournamentPlacement)
 	var i GetTournamentPlacementsByPositionRow
-	err := row.Scan(&i.Count, &i.TournamentPlacement, &i.PlayerID)
+	err := row.Scan(&i.Count, &i.TournamentPlacement)
 	return i, err
 }
 

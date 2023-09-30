@@ -265,7 +265,25 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 		}
 
 		if hasPlayed {
-			leaderStrings = append(leaderStrings, fmt.Sprintf("%d: <@%d> - %d Total Strokes %s %s", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes, placementString, movement))
+			previousWinString := ""
+			previousWins, err := l.query.GetTournamentPlacementsByPosition(l.ctx, database.GetTournamentPlacementsByPositionParams{
+				GuildID:             params.GuildID,
+				PlayerID:            leader.PlayerID,
+				TournamentPlacement: 1,
+			})
+			if err != nil && err != sql.ErrNoRows {
+				slog.Error("Failed to get previous wins", "guild", params.GuildID, "player", leader.PlayerID, "error", err)
+			} else {
+				previousWinString = fmt.Sprintf("%d 👑", previousWins.Count)
+			}
+			strokeString := fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes)
+			finalString := strings.Join([]string{
+				strokeString,
+				placementString,
+				movement,
+				previousWinString,
+			}, " ")
+			leaderStrings = append(leaderStrings, finalString)
 		} else {
 			notYetPlayed = append(notYetPlayed, fmt.Sprintf("<@%d> - %d Total Strokes %s", leader.PlayerID, leader.TotalStrokes, placementString))
 			skipCounter++

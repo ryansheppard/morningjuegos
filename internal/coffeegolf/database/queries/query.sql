@@ -29,11 +29,12 @@ DELETE FROM tournament_placement WHERE tournament_id = $1;
 SELECT * FROM tournament_placement WHERE tournament_id = $1;
 
 -- name: GetTournamentPlacementsByPosition :one
-SELECT COUNT(*) AS count, tournament_placement, player_id
+SELECT COUNT(*) AS count, tournament_placement
 FROM tournament_placement
 LEFT JOIN tournament ON tournament_placement.tournament_id = tournament.id
 WHERE tournament.guild_id = $1
 AND player_id = $2
+AND tournament_placement == $3
 GROUP BY tournament_placement, player_id;
 
 -- Round Queries
