@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: morning-juegos
-          image: registry.digitalocean.com/ryansheppard/morningjuegos:54 # {"$imagepolicy": "default:morningjuegos"}
+          image: registry.digitalocean.com/ryansheppard/morningjuegos:56 # {"$imagepolicy": "default:morningjuegos"}
           command:
             - "/morningjuegos"
           args:
