@@ -20,7 +20,7 @@ type Game struct {
 }
 
 func New(ctx context.Context, query *database.Queries, cache *cache.Cache, db *sql.DB) *Game {
-	parser := parser.New(ctx, query, db)
+	parser := parser.New(ctx, query, db, cache)
 	leaderboard := leaderboard.New(ctx, query, cache)
 	return &Game{
 		ctx:         ctx,

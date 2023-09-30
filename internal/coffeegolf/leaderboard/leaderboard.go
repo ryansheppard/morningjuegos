@@ -56,6 +56,7 @@ func (l *Leaderboard) GenerateLeaderboard(params GenerateLeaderboardParams) stri
 	// todo: find better way to do this
 	startTime := time.Now().Add(11 * -24 * time.Hour)
 	endTime := time.Now().Add(24 * time.Hour)
+	// includeEmoji gets set false when parsing a date specific leaderboard, so it gets used in a lot of places
 	includeEmoji := true
 	if params.Date != "" {
 		newYork, err := time.LoadLocation("America/New_York")
@@ -98,12 +99,15 @@ func (l *Leaderboard) GenerateLeaderboard(params GenerateLeaderboardParams) stri
 		return "Error getting a tournament for this discord server"
 	}
 
-	cacheKey := l.getLeaderboardCacheKey(guildID)
 	var cached interface{}
-	if l.cache != nil {
-		cached, err = l.cache.GetKey(cacheKey)
-		if err != nil {
-			slog.Error("Failed to get leaderboard from cache", "guild", guildID, "error", err)
+	cacheKey := ""
+	if includeEmoji {
+		cacheKey = l.getLeaderboardCacheKey(guildID)
+		if l.cache != nil {
+			cached, err = l.cache.GetKey(cacheKey)
+			if err != nil {
+				slog.Error("Failed to get leaderboard from cache", "guild", guildID, "error", err)
+			}
 		}
 	}
 
@@ -132,7 +136,7 @@ func (l *Leaderboard) GenerateLeaderboard(params GenerateLeaderboardParams) stri
 
 	all := header + "\n\n" + leaderString
 
-	if l.cache != nil {
+	if l.cache != nil && includeEmoji {
 		l.cache.SetKey(cacheKey, all, 3600)
 	}
 
@@ -264,7 +268,10 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 			continue
 		}
 
-		previousWinString := l.getCrowns(params.GuildID, leader.PlayerID)
+		previousWinString := ""
+		if params.IncludeEmoji {
+			previousWinString = l.getCrowns(params.GuildID, leader.PlayerID)
+		}
 
 		if hasPlayed {
 			strokeString := fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes)

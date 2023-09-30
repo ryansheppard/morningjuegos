@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/ryansheppard/morningjuegos/internal/cache"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 )
 
@@ -26,13 +27,15 @@ type Parser struct {
 	ctx     context.Context
 	queries *database.Queries
 	db      *sql.DB
+	cache   *cache.Cache
 }
 
-func New(ctx context.Context, queries *database.Queries, db *sql.DB) *Parser {
+func New(ctx context.Context, queries *database.Queries, db *sql.DB, cache *cache.Cache) *Parser {
 	return &Parser{
 		ctx:     ctx,
 		queries: queries,
 		db:      db,
+		cache:   cache,
 	}
 }
 
