@@ -19,21 +19,16 @@ spec:
           command:
             - "/morningjuegos"
           args:
-            - "bot"
+            - "two"
           env:
-            - name: DB_PATH
-              value: /etc/morningjuegos/db.sqlite3
-            - name: REDIS_ADDR
-              value: redis.default.svc.cluster.local:6379
+            # - name: DB_PATH
+            #   value: /etc/morningjuegos/db.sqlite3
+            # - name: REDIS_ADDR
+            #   value: redis.default.svc.cluster.local:6379
+            # - name: REDIS_DB
+            #   value: 0
             - name: TZ
               value: America/New_York
           envFrom:
             - secretRef:
-                name: morningjuegos
-          volumeMounts:
-            - name: morning-juegos
-              mountPath: /etc/morningjuegos
-      volumes:
-        - name: morning-juegos
-          persistentVolumeClaim:
-            claimName: morning-juegos
+                name: morning-juegos
