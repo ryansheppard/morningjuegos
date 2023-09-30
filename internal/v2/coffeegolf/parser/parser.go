@@ -59,7 +59,10 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			return Failed
 		}
 
-		tournament, err := p.queries.GetActiveTournament(p.ctx, guildID)
+		tournament, err := p.queries.GetActiveTournament(p.ctx, database.GetActiveTournamentParams{
+			GuildID:   guildID,
+			StartTime: time.Now(),
+		})
 		if err == sql.ErrNoRows {
 			slog.Info("No active tournament found, creating one")
 			now := time.Now()

@@ -7,7 +7,7 @@ SELECT DISTINCT guild_id FROM tournament;
 
 -- Tournament Queries
 -- name: GetActiveTournament :one
-SELECT * FROM tournament WHERE guild_id = $1 AND start_time < NOW() AND end_time > NOW();
+SELECT * FROM tournament WHERE guild_id = $1 AND start_time <= $2 AND end_time >= $2;
 
 -- name: CreateTournament :one
 INSERT INTO tournament (guild_id, start_time, end_time, inserted_by) VALUES ($1, $2, $3, $4) RETURNING *;

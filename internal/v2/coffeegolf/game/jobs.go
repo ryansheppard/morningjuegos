@@ -19,7 +19,10 @@ func (g *Game) AddMissingRounds() {
 
 	var tournaments []database.Tournament
 	for _, guildID := range guildIDs {
-		tournament, err := g.query.GetActiveTournament(g.ctx, guildID)
+		tournament, err := g.query.GetActiveTournament(g.ctx, database.GetActiveTournamentParams{
+			GuildID:   guildID,
+			StartTime: time.Now(),
+		})
 		if err == sql.ErrNoRows {
 			slog.Error("No active tournament", "guild", guildID, "error", err)
 			continue

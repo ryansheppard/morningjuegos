@@ -120,13 +120,18 @@ func (q *Queries) CreateTournament(ctx context.Context, arg CreateTournamentPara
 
 const getActiveTournament = `-- name: GetActiveTournament :one
 
-SELECT id, guild_id, start_time, end_time, inserted_at, inserted_by FROM tournament WHERE guild_id = $1 AND start_time < NOW() AND end_time > NOW()
+SELECT id, guild_id, start_time, end_time, inserted_at, inserted_by FROM tournament WHERE guild_id = $1 AND start_time <= $2 AND end_time >= $2
 `
+
+type GetActiveTournamentParams struct {
+	GuildID   int64
+	StartTime time.Time
+}
 
 // Player Queries
 // Tournament Queries
-func (q *Queries) GetActiveTournament(ctx context.Context, guildID int64) (Tournament, error) {
-	row := q.db.QueryRowContext(ctx, getActiveTournament, guildID)
+func (q *Queries) GetActiveTournament(ctx context.Context, arg GetActiveTournamentParams) (Tournament, error) {
+	row := q.db.QueryRowContext(ctx, getActiveTournament, arg.GuildID, arg.StartTime)
 	var i Tournament
 	err := row.Scan(
 		&i.ID,

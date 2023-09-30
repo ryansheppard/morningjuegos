@@ -80,9 +80,17 @@ func (l *Leaderboard) GenerateLeaderboard(params GenerateLeaderboardParams) stri
 		return "Could not generate a leaderboard for this discord server"
 	}
 
-	slog.Info("Generating leaderboard", "guild", guildID)
+	slog.Info("Generating leaderboard", "guild", guildID, "startTime", startTime, "endTime", endTime)
 
-	tournament, err := l.query.GetActiveTournament(l.ctx, guildID)
+	tournamentTime := time.Now()
+	if params.Date != "" {
+		tournamentTime = startTime
+	}
+
+	tournament, err := l.query.GetActiveTournament(l.ctx, database.GetActiveTournamentParams{
+		GuildID:   guildID,
+		StartTime: tournamentTime,
+	})
 	if err == sql.ErrNoRows {
 		return "Could not find a tournament for this discord server"
 	} else if err != nil {
@@ -140,7 +148,10 @@ func (l *Leaderboard) GenerateStats(guildIDString string) string {
 
 	slog.Info("Generating stats", "guild", guildID)
 
-	tournament, err := l.query.GetActiveTournament(l.ctx, guildID)
+	tournament, err := l.query.GetActiveTournament(l.ctx, database.GetActiveTournamentParams{
+		GuildID:   guildID,
+		StartTime: time.Now(),
+	})
 	if err == sql.ErrNoRows {
 		return "Could not find a tournament for this discord server"
 	} else if err != nil {
