@@ -86,26 +86,57 @@ func (g *Game) AddMissingRounds() {
 	slog.Info("Finished adding missing rounds")
 }
 
-// func (g *Game) AddTournamentWinners() {
-// 	guilds, err := g.query.GetAllGuilds(g.ctx)
-// 	if err != nil {
-// 		slog.Error("Failed to get all guilds", err)
-// 	}
+func (g *Game) AddTournamentWinners() {
+	guilds, err := g.query.GetAllGuilds(g.ctx)
+	if err != nil {
+		slog.Error("Failed to get all guilds", err)
+	}
 
-// 	var inactiveTournaments []database.Tournament
-// 	for _, guild := range guilds {
-// 		tournaments := g.query.GetInactiveTournaments(guild)
-// 		if len(tournaments) > 0 {
-// 			inactiveTournaments = append(inactiveTournaments, tournaments...)
-// 		}
-// 	}
+	var inactiveTournaments []database.Tournament
+	for _, guild := range guilds {
+		tournaments, err := g.query.GetInactiveTournaments(g.ctx, database.GetInactiveTournamentsParams{
+			GuildID: guild,
+			EndTime: time.Now(),
+		})
+		if err != nil {
+			slog.Error("Failed to get inactive tournaments", "guild", guild, "error", err)
+			continue
+		}
+		if len(tournaments) > 0 {
+			inactiveTournaments = append(inactiveTournaments, tournaments...)
+		}
+	}
 
-// 	for _, tournament := range inactiveTournaments {
-// 		uniquePlayers := cg.Query.getUniquePlayersInTournament(tournament.ID)
-// 		placements := cg.Query.getTournamentPlacements(tournament.ID)
+	for _, tournament := range inactiveTournaments {
+		uniquePlayers, err := g.query.GetUniquePlayersInTournament(g.ctx, tournament.ID)
+		if err != nil {
+			slog.Error("Failed to get unique players in tournament", "tournament", tournament, "error", err)
+			continue
+		}
 
-// 		if len(uniquePlayers) != len(placements) {
-// 			cg.Query.createTournamentPlacements(tournament.ID, tournament.GuildID)
-// 		}
-// 	}
-// }
+		placements, err := g.query.GetTournamentPlacements(g.ctx, tournament.ID)
+		if err != nil {
+			slog.Error("Failed to get tournament placements", "tournament", tournament, "error", err)
+			continue
+		}
+
+		if len(uniquePlayers) != len(placements) {
+			placements, err := g.query.GetFinalLeaders(g.ctx, tournament.ID)
+			if err != nil {
+				slog.Error("Failed to get final leaders", "tournament", tournament, "error", err)
+				continue
+			}
+			// transaction
+			g.query.CleanTournamentPlacements(g.ctx, tournament.ID)
+			for i, placement := range placements {
+				g.query.CreateTournamentPlacement(g.ctx, database.CreateTournamentPlacementParams{
+					TournamentID:        tournament.ID,
+					PlayerID:            placement.PlayerID,
+					TournamentPlacement: int32(i + 1),
+					Strokes:             int32(placement.TotalStrokes),
+					InsertedBy:          "add_tournament_winners",
+				})
+			}
+		}
+	}
+}

@@ -11,6 +11,15 @@ import (
 	"time"
 )
 
+const cleanTournamentPlacements = `-- name: CleanTournamentPlacements :exec
+DELETE FROM tournament_placement WHERE tournament_id = $1
+`
+
+func (q *Queries) CleanTournamentPlacements(ctx context.Context, tournamentID int32) error {
+	_, err := q.db.ExecContext(ctx, cleanTournamentPlacements, tournamentID)
+	return err
+}
+
 const createHole = `-- name: CreateHole :one
 INSERT INTO hole (round_id, color, strokes, hole_number, inserted_by) VALUES ($1, $2, $3, $4, $5) RETURNING id, round_id, hole_number, color, strokes, inserted_at, inserted_by
 `
@@ -118,6 +127,39 @@ func (q *Queries) CreateTournament(ctx context.Context, arg CreateTournamentPara
 	return i, err
 }
 
+const createTournamentPlacement = `-- name: CreateTournamentPlacement :one
+INSERT INTO tournament_placement (tournament_id, player_id, tournament_placement, strokes, inserted_by) VALUES ($1, $2, $3, $4, $5) RETURNING tournament_id, player_id, tournament_placement, strokes, inserted_at, inserted_by
+`
+
+type CreateTournamentPlacementParams struct {
+	TournamentID        int32
+	PlayerID            int64
+	TournamentPlacement int32
+	Strokes             int32
+	InsertedBy          string
+}
+
+// TournamentPlacement Queries
+func (q *Queries) CreateTournamentPlacement(ctx context.Context, arg CreateTournamentPlacementParams) (TournamentPlacement, error) {
+	row := q.db.QueryRowContext(ctx, createTournamentPlacement,
+		arg.TournamentID,
+		arg.PlayerID,
+		arg.TournamentPlacement,
+		arg.Strokes,
+		arg.InsertedBy,
+	)
+	var i TournamentPlacement
+	err := row.Scan(
+		&i.TournamentID,
+		&i.PlayerID,
+		&i.TournamentPlacement,
+		&i.Strokes,
+		&i.InsertedAt,
+		&i.InsertedBy,
+	)
+	return i, err
+}
+
 const getActiveTournament = `-- name: GetActiveTournament :one
 
 SELECT id, guild_id, start_time, end_time, inserted_at, inserted_by FROM tournament WHERE guild_id = $1 AND start_time <= $2 AND end_time >= $2
@@ -163,6 +205,43 @@ func (q *Queries) GetAllGuilds(ctx context.Context) ([]int64, error) {
 			return nil, err
 		}
 		items = append(items, guild_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFinalLeaders = `-- name: GetFinalLeaders :many
+SELECT SUM(total_strokes) AS total_strokes, player_id
+FROM round
+WHERE tournament_id = $1
+AND first_round = TRUE
+GROUP BY player_id
+ORDER BY total_strokes ASC
+`
+
+type GetFinalLeadersRow struct {
+	TotalStrokes int64
+	PlayerID     int64
+}
+
+func (q *Queries) GetFinalLeaders(ctx context.Context, tournamentID int32) ([]GetFinalLeadersRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFinalLeaders, tournamentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFinalLeadersRow
+	for rows.Next() {
+		var i GetFinalLeadersRow
+		if err := rows.Scan(&i.TotalStrokes, &i.PlayerID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -219,6 +298,45 @@ func (q *Queries) GetHoleInOneLeader(ctx context.Context, tournamentID int32) (G
 	var i GetHoleInOneLeaderRow
 	err := row.Scan(&i.Count, &i.PlayerID)
 	return i, err
+}
+
+const getInactiveTournaments = `-- name: GetInactiveTournaments :many
+SELECT id, guild_id, start_time, end_time, inserted_at, inserted_by FROM tournament WHERE guild_id = $1 AND end_time < $2
+`
+
+type GetInactiveTournamentsParams struct {
+	GuildID int64
+	EndTime time.Time
+}
+
+func (q *Queries) GetInactiveTournaments(ctx context.Context, arg GetInactiveTournamentsParams) ([]Tournament, error) {
+	rows, err := q.db.QueryContext(ctx, getInactiveTournaments, arg.GuildID, arg.EndTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Tournament
+	for rows.Next() {
+		var i Tournament
+		if err := rows.Scan(
+			&i.ID,
+			&i.GuildID,
+			&i.StartTime,
+			&i.EndTime,
+			&i.InsertedAt,
+			&i.InsertedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getLeaders = `-- name: GetLeaders :many
@@ -336,6 +454,67 @@ func (q *Queries) GetPlacementsForPeriod(ctx context.Context, arg GetPlacementsF
 		return nil, err
 	}
 	return items, nil
+}
+
+const getTournamentPlacements = `-- name: GetTournamentPlacements :many
+SELECT tournament_id, player_id, tournament_placement, strokes, inserted_at, inserted_by FROM tournament_placement WHERE tournament_id = $1
+`
+
+func (q *Queries) GetTournamentPlacements(ctx context.Context, tournamentID int32) ([]TournamentPlacement, error) {
+	rows, err := q.db.QueryContext(ctx, getTournamentPlacements, tournamentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TournamentPlacement
+	for rows.Next() {
+		var i TournamentPlacement
+		if err := rows.Scan(
+			&i.TournamentID,
+			&i.PlayerID,
+			&i.TournamentPlacement,
+			&i.Strokes,
+			&i.InsertedAt,
+			&i.InsertedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTournamentPlacementsByPosition = `-- name: GetTournamentPlacementsByPosition :one
+SELECT COUNT(*) AS count, tournament_placement, player_id
+FROM tournament_placement
+LEFT JOIN tournament ON tournament_placement.tournament_id = tournament.id
+WHERE tournament.guild_id = $1
+AND player_id = $2
+GROUP BY tournament_placement, player_id
+`
+
+type GetTournamentPlacementsByPositionParams struct {
+	GuildID  int64
+	PlayerID int64
+}
+
+type GetTournamentPlacementsByPositionRow struct {
+	Count               int64
+	TournamentPlacement int32
+	PlayerID            int64
+}
+
+func (q *Queries) GetTournamentPlacementsByPosition(ctx context.Context, arg GetTournamentPlacementsByPositionParams) (GetTournamentPlacementsByPositionRow, error) {
+	row := q.db.QueryRowContext(ctx, getTournamentPlacementsByPosition, arg.GuildID, arg.PlayerID)
+	var i GetTournamentPlacementsByPositionRow
+	err := row.Scan(&i.Count, &i.TournamentPlacement, &i.PlayerID)
+	return i, err
 }
 
 const getUniquePlayersInTournament = `-- name: GetUniquePlayersInTournament :many

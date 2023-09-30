@@ -57,7 +57,7 @@ var jobsCmd = &cobra.Command{
 
 		s := gocron.NewScheduler(newYork)
 		s.Every(15).Minute().Do(cg.AddMissingRounds)
-		// s.Every(15).Minute().Do(cg.AddTournamentWinners)
+		s.Every(15).Minute().Do(cg.AddTournamentWinners)
 		s.StartAsync()
 
 		slog.Info("MorningJuegos jobs are now running. Press CTRL-C to exit.")
