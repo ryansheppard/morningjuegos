@@ -40,7 +40,6 @@ func (p *Parser) isCoffeeGolf(message string) bool {
 	return strings.HasPrefix(message, "Coffee Golf")
 }
 
-// TODO need to actually insert the data
 // ParseGame parses a Coffee Golf game from a Discord message
 func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 	message := m.Content
