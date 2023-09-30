@@ -11,6 +11,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/ryansheppard/morningjuegos/internal/cache"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/leaderboard"
 )
 
 const (
@@ -157,6 +158,9 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 		if firstRound {
 			return FirstRound
 		}
+
+		cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
+		p.cache.DeleteKey(cacheKey)
 
 		return BonusRound
 	}

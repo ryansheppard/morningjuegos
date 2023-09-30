@@ -102,7 +102,7 @@ func (l *Leaderboard) GenerateLeaderboard(params GenerateLeaderboardParams) stri
 	var cached interface{}
 	cacheKey := ""
 	if includeEmoji {
-		cacheKey = l.getLeaderboardCacheKey(guildID)
+		cacheKey = GetLeaderboardCacheKey(guildID)
 		if l.cache != nil {
 			cached, err = l.cache.GetKey(cacheKey)
 			if err != nil {
@@ -163,7 +163,7 @@ func (l *Leaderboard) GenerateStats(guildIDString string) string {
 		return "Error getting a tournament for this discord server"
 	}
 
-	cacheKey := l.getStatsCacheKey(guildID)
+	cacheKey := GetStatsCacheKey(guildID)
 	var cached interface{}
 	if l.cache != nil {
 		cached, err = l.cache.GetKey(cacheKey)
@@ -189,14 +189,6 @@ func (l *Leaderboard) GenerateStats(guildIDString string) string {
 	}
 
 	return all
-}
-
-func (l *Leaderboard) getLeaderboardCacheKey(guildID int64) string {
-	return fmt.Sprintf("leaderboard:%d", guildID)
-}
-
-func (l *Leaderboard) getStatsCacheKey(guildID int64) string {
-	return fmt.Sprintf("stats:%d", guildID)
 }
 
 func (l *Leaderboard) generateHeader(tournament *database.Tournament) string {
