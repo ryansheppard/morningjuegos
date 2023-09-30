@@ -15,6 +15,7 @@ type Hole struct {
 	Color      string
 	Strokes    int32
 	InsertedAt time.Time
+	InsertedBy string
 }
 
 type Round struct {
@@ -26,6 +27,7 @@ type Round struct {
 	InsertedAt   time.Time
 	FirstRound   bool
 	Percentage   string
+	InsertedBy   string
 }
 
 type Tournament struct {
@@ -34,6 +36,7 @@ type Tournament struct {
 	StartTime  time.Time
 	EndTime    time.Time
 	InsertedAt time.Time
+	InsertedBy string
 }
 
 type TournamentPlacement struct {
@@ -42,4 +45,5 @@ type TournamentPlacement struct {
 	TournamentPlacement int32
 	Strokes             int32
 	InsertedAt          time.Time
+	InsertedBy          string
 }

@@ -12,7 +12,7 @@ import (
 )
 
 const createHole = `-- name: CreateHole :one
-INSERT INTO hole (round_id, color, strokes, hole_number) VALUES ($1, $2, $3, $4) RETURNING id, round_id, hole_number, color, strokes, inserted_at
+INSERT INTO hole (round_id, color, strokes, hole_number, inserted_by) VALUES ($1, $2, $3, $4, $5) RETURNING id, round_id, hole_number, color, strokes, inserted_at, inserted_by
 `
 
 type CreateHoleParams struct {
@@ -20,6 +20,7 @@ type CreateHoleParams struct {
 	Color      string
 	Strokes    int32
 	HoleNumber int32
+	InsertedBy string
 }
 
 // Hole Queries
@@ -29,6 +30,7 @@ func (q *Queries) CreateHole(ctx context.Context, arg CreateHoleParams) (Hole, e
 		arg.Color,
 		arg.Strokes,
 		arg.HoleNumber,
+		arg.InsertedBy,
 	)
 	var i Hole
 	err := row.Scan(
@@ -38,12 +40,16 @@ func (q *Queries) CreateHole(ctx context.Context, arg CreateHoleParams) (Hole, e
 		&i.Color,
 		&i.Strokes,
 		&i.InsertedAt,
+		&i.InsertedBy,
 	)
 	return i, err
 }
 
 const createRound = `-- name: CreateRound :one
-INSERT INTO round (tournament_id, player_id, total_strokes, original_date, percentage, first_round) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage
+INSERT INTO round
+(tournament_id, player_id, total_strokes, original_date, percentage, first_round, inserted_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by
 `
 
 type CreateRoundParams struct {
@@ -53,6 +59,7 @@ type CreateRoundParams struct {
 	OriginalDate string
 	Percentage   string
 	FirstRound   bool
+	InsertedBy   string
 }
 
 // Round Queries
@@ -64,6 +71,7 @@ func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round
 		arg.OriginalDate,
 		arg.Percentage,
 		arg.FirstRound,
+		arg.InsertedBy,
 	)
 	var i Round
 	err := row.Scan(
@@ -75,22 +83,29 @@ func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round
 		&i.InsertedAt,
 		&i.FirstRound,
 		&i.Percentage,
+		&i.InsertedBy,
 	)
 	return i, err
 }
 
 const createTournament = `-- name: CreateTournament :one
-INSERT INTO tournament (guild_id, start_time, end_time) VALUES ($1, $2, $3) RETURNING id, guild_id, start_time, end_time, inserted_at
+INSERT INTO tournament (guild_id, start_time, end_time, inserted_by) VALUES ($1, $2, $3, $4) RETURNING id, guild_id, start_time, end_time, inserted_at, inserted_by
 `
 
 type CreateTournamentParams struct {
-	GuildID   int64
-	StartTime time.Time
-	EndTime   time.Time
+	GuildID    int64
+	StartTime  time.Time
+	EndTime    time.Time
+	InsertedBy string
 }
 
 func (q *Queries) CreateTournament(ctx context.Context, arg CreateTournamentParams) (Tournament, error) {
-	row := q.db.QueryRowContext(ctx, createTournament, arg.GuildID, arg.StartTime, arg.EndTime)
+	row := q.db.QueryRowContext(ctx, createTournament,
+		arg.GuildID,
+		arg.StartTime,
+		arg.EndTime,
+		arg.InsertedBy,
+	)
 	var i Tournament
 	err := row.Scan(
 		&i.ID,
@@ -98,13 +113,14 @@ func (q *Queries) CreateTournament(ctx context.Context, arg CreateTournamentPara
 		&i.StartTime,
 		&i.EndTime,
 		&i.InsertedAt,
+		&i.InsertedBy,
 	)
 	return i, err
 }
 
 const getActiveTournament = `-- name: GetActiveTournament :one
 
-SELECT id, guild_id, start_time, end_time, inserted_at FROM tournament WHERE guild_id = $1 AND start_time < NOW() AND end_time > NOW()
+SELECT id, guild_id, start_time, end_time, inserted_at, inserted_by FROM tournament WHERE guild_id = $1 AND start_time < NOW() AND end_time > NOW()
 `
 
 // Player Queries
@@ -118,6 +134,7 @@ func (q *Queries) GetActiveTournament(ctx context.Context, guildID int64) (Tourn
 		&i.StartTime,
 		&i.EndTime,
 		&i.InsertedAt,
+		&i.InsertedBy,
 	)
 	return i, err
 }
@@ -344,7 +361,7 @@ func (q *Queries) GetUniquePlayersInTournament(ctx context.Context, tournamentID
 }
 
 const getWorstRound = `-- name: GetWorstRound :one
-SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage
+SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
@@ -364,12 +381,13 @@ func (q *Queries) GetWorstRound(ctx context.Context, tournamentID int32) (Round,
 		&i.InsertedAt,
 		&i.FirstRound,
 		&i.Percentage,
+		&i.InsertedBy,
 	)
 	return i, err
 }
 
 const hasPlayed = `-- name: HasPlayed :one
-SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage
+SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by
 FROM round
 WHERE player_id = $1
 AND tournament_id = $2
@@ -394,12 +412,13 @@ func (q *Queries) HasPlayed(ctx context.Context, arg HasPlayedParams) (Round, er
 		&i.InsertedAt,
 		&i.FirstRound,
 		&i.Percentage,
+		&i.InsertedBy,
 	)
 	return i, err
 }
 
 const hasPlayedToday = `-- name: HasPlayedToday :one
-SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage 
+SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by 
 FROM round
 WHERE player_id = $1
 AND tournament_id = $2
@@ -423,6 +442,7 @@ func (q *Queries) HasPlayedToday(ctx context.Context, arg HasPlayedTodayParams) 
 		&i.InsertedAt,
 		&i.FirstRound,
 		&i.Percentage,
+		&i.InsertedBy,
 	)
 	return i, err
 }

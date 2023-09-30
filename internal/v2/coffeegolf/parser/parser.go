@@ -64,9 +64,10 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 		if err == sql.ErrNoRows {
 			slog.Info("No active tournament found, creating one")
 			tournament, err = p.queries.CreateTournament(p.ctx, database.CreateTournamentParams{
-				GuildID:   guildID,
-				StartTime: time.Now(),
-				EndTime:   time.Now().AddDate(0, 0, defaultTouramentLength),
+				GuildID:    guildID,
+				StartTime:  time.Now(),
+				EndTime:    time.Now().AddDate(0, 0, defaultTouramentLength),
+				InsertedBy: "parser",
 			})
 			if err != nil {
 				slog.Error("Failed to create tournament", "guild", guildID, "error", err)
@@ -114,6 +115,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			TotalStrokes: round.TotalStrokes,
 			Percentage:   round.Percentage,
 			FirstRound:   firstRound,
+			InsertedBy:   "parser",
 		})
 
 		if err != nil {
@@ -128,6 +130,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 				Color:      hole.Color,
 				Strokes:    hole.Strokes,
 				HoleNumber: hole.HoleNumber,
+				InsertedBy: "parser",
 			})
 			if err != nil {
 				slog.Error("Failed to insert hole", "hole", hole, "error", err)

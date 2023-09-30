@@ -10,14 +10,17 @@ SELECT DISTINCT guild_id FROM tournament;
 SELECT * FROM tournament WHERE guild_id = $1 AND start_time < NOW() AND end_time > NOW();
 
 -- name: CreateTournament :one
-INSERT INTO tournament (guild_id, start_time, end_time) VALUES ($1, $2, $3) RETURNING *;
+INSERT INTO tournament (guild_id, start_time, end_time, inserted_by) VALUES ($1, $2, $3, $4) RETURNING *;
 
 -- name: GetUniquePlayersInTournament :many
 SELECT DISTINCT player_id FROM round WHERE tournament_id = $1;
 
 -- Round Queries
 -- name: CreateRound :one
-INSERT INTO round (tournament_id, player_id, total_strokes, original_date, percentage, first_round) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
+INSERT INTO round
+(tournament_id, player_id, total_strokes, original_date, percentage, first_round, inserted_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING *;
 
 -- name: HasPlayedToday :one
 SELECT * 
@@ -62,7 +65,7 @@ LIMIT 1;
 
 -- Hole Queries
 -- name: CreateHole :one
-INSERT INTO hole (round_id, color, strokes, hole_number) VALUES ($1, $2, $3, $4) RETURNING *;
+INSERT INTO hole (round_id, color, strokes, hole_number, inserted_by) VALUES ($1, $2, $3, $4, $5) RETURNING *;
 
 -- name: GetHardestHole :one
 SELECT AVG(strokes) AS strokes, color

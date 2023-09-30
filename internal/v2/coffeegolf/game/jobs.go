@@ -70,6 +70,7 @@ func (g *Game) AddMissingRounds() {
 						TotalStrokes: defaultStrokes,
 						OriginalDate: "",
 						FirstRound:   true,
+						InsertedBy:   "add_missing_rounds",
 					},
 					)
 				} else if err != nil {
