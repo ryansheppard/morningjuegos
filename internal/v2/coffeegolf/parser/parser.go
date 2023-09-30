@@ -63,10 +63,15 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 		tournament, err := p.queries.GetActiveTournament(p.ctx, guildID)
 		if err == sql.ErrNoRows {
 			slog.Info("No active tournament found, creating one")
+			now := time.Now()
+			start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+			end := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
+			endDate := end.AddDate(0, 0, defaultTouramentLength)
+
 			tournament, err = p.queries.CreateTournament(p.ctx, database.CreateTournamentParams{
 				GuildID:    guildID,
-				StartTime:  time.Now(),
-				EndTime:    time.Now().AddDate(0, 0, defaultTouramentLength),
+				StartTime:  start,
+				EndTime:    endDate,
 				InsertedBy: "parser",
 			})
 			if err != nil {
