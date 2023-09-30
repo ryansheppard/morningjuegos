@@ -6,9 +6,10 @@ COPY . .
 RUN apt-get update && apt-get install -y git
 RUN CGO_ENABLED=0 go install -ldflags '-extldflags "-static"' -tags timetzdata
 
-FROM scratch
+FROM gcr.io/distroless/static:nonroot
 
-COPY --from=builder /go/bin/morningjuegos /morningjuegos
-COPY --from=golang:1.21 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+USER nonroot:nonroot
+
+COPY --from=builder --chown=nonroot:nonroot /go/bin/morningjuegos /morningjuegos
 
 ENTRYPOINT ["/morningjuegos"]
