@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: morning-juegos
+  labels:
+    app: morning-juegos
+spec:
+  selector:
+    matchLabels:
+      app: morning-juegos
+  template:
+    metadata:
+      labels:
+        app: morning-juegos
+    spec:
+      containers:
+        - name: morning-juegos
+          image: registry.digitalocean.com/ryansheppard/morningjuegos:60 # {"$imagepolicy": "default:morningjuegos"}
+          command:
+            - "/morningjuegos"
+          args:
+            - "jobtwo"
+          env:
+            # - name: REDIS_ADDR
+            #   value: redis.default.svc.cluster.local:6379
+            # - name: REDIS_DB
+            #   value: 0
+            - name: TZ
+              value: America/New_York
+          envFrom:
+            - secretRef:
+                name: morning-juegos

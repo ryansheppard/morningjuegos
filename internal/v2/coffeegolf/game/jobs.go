@@ -1,6 +1,7 @@
 package game
 
 import (
+	"database/sql"
 	"log/slog"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 const defaultStrokes = 20
 
 func (g *Game) AddMissingRounds() {
+	slog.Info("Adding missing rounds")
 	guildIDs, err := g.query.GetAllGuilds(g.ctx)
 	if err != nil {
 		slog.Error("Failed to get all guilds", "error", err)
@@ -18,13 +20,14 @@ func (g *Game) AddMissingRounds() {
 	var tournaments []database.Tournament
 	for _, guildID := range guildIDs {
 		tournament, err := g.query.GetActiveTournament(g.ctx, guildID)
-		if err != nil {
-			slog.Error("Failed to get active tournament", "guild", guildID, "error", err)
+		if err == sql.ErrNoRows {
+			slog.Error("No active tournament", "guild", guildID, "error", err)
 			continue
+		} else if err != nil {
+			slog.Error("Failed to get active tournament", "guild", guildID, "error", err)
 		}
-		if tournament != (database.Tournament{}) {
-			tournaments = append(tournaments, tournament)
-		}
+
+		tournaments = append(tournaments, tournament)
 	}
 
 	now := time.Now().Unix()
@@ -46,15 +49,13 @@ func (g *Game) AddMissingRounds() {
 		for i := int64(0); i < numDaysPlayed; i++ {
 			day := start + (i * 86400)
 			for _, player := range players {
-				exists, err := g.query.HasPlayed(g.ctx, database.HasPlayedParams{
+				_, err := g.query.HasPlayed(g.ctx, database.HasPlayedParams{
 					PlayerID:     player,
 					TournamentID: tournament.ID,
 					DateTrunc:    day,
 				})
-				if err != nil {
-					slog.Error("Failed to check if player has played", "player", player, "tournament", tournament, "day", day, "error", err)
-				}
-				if exists == (database.Round{}) {
+				if err == sql.ErrNoRows {
+					slog.Info("Adding missing round", "player", player, "tournament", tournament, "day", day)
 					entry := &database.Round{
 						PlayerID:     player,
 						TournamentID: tournament.ID,
@@ -71,10 +72,14 @@ func (g *Game) AddMissingRounds() {
 						FirstRound:   true,
 					},
 					)
+				} else if err != nil {
+					slog.Error("Failed to check if player has played", "player", player, "tournament", tournament, "day", day, "error", err)
 				}
 			}
 		}
 	}
+
+	slog.Info("Finished adding missing rounds")
 }
 
 // func (g *Game) AddTournamentWinners() {
