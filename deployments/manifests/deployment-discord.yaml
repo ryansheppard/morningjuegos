@@ -4,14 +4,17 @@ metadata:
   name: morning-juegos
   labels:
     app: morning-juegos
+    component: discord
 spec:
   selector:
     matchLabels:
       app: morning-juegos
+      component: discord
   template:
     metadata:
       labels:
         app: morning-juegos
+        component: discord
     spec:
       containers:
         - name: morning-juegos

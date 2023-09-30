@@ -1,17 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: morning-juegos
+  name: morning-juegos-jobs
   labels:
     app: morning-juegos
+    component: jobs
 spec:
   selector:
     matchLabels:
       app: morning-juegos
+      component: jobs
   template:
     metadata:
       labels:
         app: morning-juegos
+        component: jobs
     spec:
       containers:
         - name: morning-juegos
