@@ -264,20 +264,9 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 			continue
 		}
 
+		previousWinString := l.getCrowns(params.GuildID, leader.PlayerID)
+
 		if hasPlayed {
-			previousWinString := ""
-			previousWins, err := l.query.GetTournamentPlacementsByPosition(l.ctx, database.GetTournamentPlacementsByPositionParams{
-				GuildID:             params.GuildID,
-				PlayerID:            leader.PlayerID,
-				TournamentPlacement: 1,
-			})
-			if err != nil && err != sql.ErrNoRows {
-				slog.Error("Failed to get previous wins", "guild", params.GuildID, "player", leader.PlayerID, "error", err)
-			} else {
-				if previousWins.Count > 0 {
-					previousWinString = fmt.Sprintf("%d 👑", previousWins.Count)
-				}
-			}
 			strokeString := fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes)
 			finalString := strings.Join([]string{
 				strokeString,
@@ -302,6 +291,24 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 	}
 
 	return leaderString + notYetPlayedString
+}
+
+func (l *Leaderboard) getCrowns(guildID int64, playerID int64) string {
+	previousWins, err := l.query.GetTournamentPlacementsByPosition(l.ctx, database.GetTournamentPlacementsByPositionParams{
+		GuildID:             guildID,
+		PlayerID:            playerID,
+		TournamentPlacement: 1,
+	})
+	if err != nil && err != sql.ErrNoRows {
+		slog.Error("Failed to get previous wins", "guild", guildID, "player", playerID, "error", err)
+		return ""
+	} else {
+		if previousWins.Count > 0 {
+			return fmt.Sprintf("%d 👑", previousWins.Count)
+		}
+	}
+
+	return ""
 }
 
 func (l *Leaderboard) getPlacementEmoji(placement int) string {
