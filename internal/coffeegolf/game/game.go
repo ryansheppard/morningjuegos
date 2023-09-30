@@ -9,6 +9,7 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/leaderboard"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/parser"
+	"github.com/ryansheppard/morningjuegos/internal/messages"
 )
 
 type Game struct {
@@ -17,10 +18,12 @@ type Game struct {
 	cache       *cache.Cache
 	Parser      *parser.Parser
 	leaderboard *leaderboard.Leaderboard
+	messenger   *messages.Messenger
 }
 
-func New(ctx context.Context, query *database.Queries, cache *cache.Cache, db *sql.DB) *Game {
-	parser := parser.New(ctx, query, db, cache)
+// Todo replace with withoptions
+func New(ctx context.Context, query *database.Queries, cache *cache.Cache, db *sql.DB, messenger *messages.Messenger) *Game {
+	parser := parser.New(ctx, query, db, cache, messenger)
 	leaderboard := leaderboard.New(ctx, query, cache)
 	return &Game{
 		ctx:         ctx,
@@ -28,6 +31,7 @@ func New(ctx context.Context, query *database.Queries, cache *cache.Cache, db *s
 		cache:       cache,
 		Parser:      parser,
 		leaderboard: leaderboard,
+		messenger:   messenger,
 	}
 }
 

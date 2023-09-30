@@ -12,6 +12,7 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/cache"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/leaderboard"
+	"github.com/ryansheppard/morningjuegos/internal/messages"
 )
 
 const (
@@ -25,18 +26,20 @@ const (
 const defaultTouramentLength = 10
 
 type Parser struct {
-	ctx     context.Context
-	queries *database.Queries
-	db      *sql.DB
-	cache   *cache.Cache
+	ctx       context.Context
+	queries   *database.Queries
+	db        *sql.DB
+	cache     *cache.Cache
+	messenger *messages.Messenger
 }
 
-func New(ctx context.Context, queries *database.Queries, db *sql.DB, cache *cache.Cache) *Parser {
+func New(ctx context.Context, queries *database.Queries, db *sql.DB, cache *cache.Cache, messenger *messages.Messenger) *Parser {
 	return &Parser{
-		ctx:     ctx,
-		queries: queries,
-		db:      db,
-		cache:   cache,
+		ctx:       ctx,
+		queries:   queries,
+		db:        db,
+		cache:     cache,
+		messenger: messenger,
 	}
 }
 
@@ -155,12 +158,26 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			return ParsedButNotInserted
 		}
 
+		// Add missing rounds
+		msg := messages.RoundCreated{
+			GuildID:      guildID,
+			TournamentID: tournament.ID,
+			PlayerID:     playerID,
+		}
+		bytes, err := msg.AsBytes()
+		if err != nil {
+			slog.Error("Failed to marshal message", "message", msg, "error", err)
+		} else {
+			p.messenger.Publish(msg.Key(), bytes)
+		}
+
+		// clear cache
+		cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
+		p.cache.DeleteKey(cacheKey)
+
 		if firstRound {
 			return FirstRound
 		}
-
-		cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
-		p.cache.DeleteKey(cacheKey)
 
 		return BonusRound
 	}

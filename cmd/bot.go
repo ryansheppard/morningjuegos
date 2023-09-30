@@ -16,6 +16,7 @@ import (
 	cgQueries "github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	coffeegolf "github.com/ryansheppard/morningjuegos/internal/coffeegolf/game"
 	"github.com/ryansheppard/morningjuegos/internal/discord"
+	"github.com/ryansheppard/morningjuegos/internal/messages"
 )
 
 var botCmd = &cobra.Command{
@@ -37,6 +38,9 @@ var botCmd = &cobra.Command{
 
 		c := cache.New(ctx, redisAddr, redisDBInt)
 
+		natsURL := os.Getenv("NATS_URL")
+		m := messages.New(natsURL)
+
 		dsn := os.Getenv("DB_DSN")
 		db, err := sql.Open("postgres", dsn)
 		if err != nil {
@@ -46,7 +50,7 @@ var botCmd = &cobra.Command{
 
 		q := cgQueries.New(db)
 
-		cg := coffeegolf.New(ctx, q, c, db)
+		cg := coffeegolf.New(ctx, q, c, db, m)
 
 		token := os.Getenv("DISCORD_TOKEN")
 		appID := os.Getenv("DISCORD_APP_ID")

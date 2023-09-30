@@ -31,6 +31,7 @@ func (g *Game) AddMissingRounds() {
 			slog.Error("Failed to get active tournament", "guild", guildID, "error", err)
 		}
 
+		// clear cache
 		cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
 		g.cache.DeleteKey(cacheKey)
 
