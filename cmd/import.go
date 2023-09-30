@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
-	cgQueries "github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	"github.com/spf13/cobra"
 
 	_ "github.com/lib/pq"
@@ -126,7 +125,7 @@ var importCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		queries := cgQueries.New(db)
+		queries := database.New(db)
 
 		tx, err := db.Begin()
 		if err != nil {
