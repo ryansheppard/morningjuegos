@@ -24,10 +24,10 @@ spec:
           args:
             - "jobs"
           env:
-            # - name: REDIS_ADDR
-            #   value: redis.default.svc.cluster.local:6379
-            # - name: REDIS_DB
-            #   value: 0
+            - name: REDIS_ADDR
+              value: redis.default.svc.cluster.local:6379
+            - name: REDIS_DB
+              value: 0
             - name: TZ
               value: America/New_York
           envFrom:
