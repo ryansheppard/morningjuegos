@@ -274,7 +274,9 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 			if err != nil && err != sql.ErrNoRows {
 				slog.Error("Failed to get previous wins", "guild", params.GuildID, "player", leader.PlayerID, "error", err)
 			} else {
-				previousWinString = fmt.Sprintf("%d 👑", previousWins.Count)
+				if previousWins.Count > 0 {
+					previousWinString = fmt.Sprintf("%d 👑", previousWins.Count)
+				}
 			}
 			strokeString := fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes)
 			finalString := strings.Join([]string{

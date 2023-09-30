@@ -496,7 +496,7 @@ FROM tournament_placement
 LEFT JOIN tournament ON tournament_placement.tournament_id = tournament.id
 WHERE tournament.guild_id = $1
 AND player_id = $2
-AND tournament_placement == $3
+AND tournament_placement = $3
 GROUP BY tournament_placement, player_id
 `
 
