@@ -24,8 +24,6 @@ spec:
           args:
             - "bot"
           env:
-            # - name: DB_PATH
-            #   value: /etc/morningjuegos/db.sqlite3
             # - name: REDIS_ADDR
             #   value: redis.default.svc.cluster.local:6379
             # - name: REDIS_DB
