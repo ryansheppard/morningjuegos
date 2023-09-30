@@ -58,7 +58,12 @@ func (l *Leaderboard) GenerateLeaderboard(params GenerateLeaderboardParams) stri
 	endTime := time.Now().Add(24 * time.Hour)
 	includeEmoji := true
 	if params.Date != "" {
-		parsedTime, err := time.Parse("2006-01-02", params.Date)
+		newYork, err := time.LoadLocation("America/New_York")
+		if err != nil {
+			slog.Error("Failed to load location", "error", err)
+			return "Could not parse the given date, try using the format 2023-01-01 (yyyy-mm-dd)"
+		}
+		parsedTime, err := time.ParseInLocation("2006-01-02", params.Date, newYork)
 		if err != nil {
 			slog.Error("Failed to parse date", "date", params.Date, "error", err)
 			return "Could not parse the given date, try using the format 2023-01-01 (yyyy-mm-dd)"
