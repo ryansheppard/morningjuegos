@@ -87,6 +87,7 @@ func (g *Game) AddMissingRounds() {
 }
 
 func (g *Game) AddTournamentWinners() {
+	slog.Info("Adding tournament winners")
 	guilds, err := g.query.GetAllGuilds(g.ctx)
 	if err != nil {
 		slog.Error("Failed to get all guilds", err)
@@ -139,4 +140,5 @@ func (g *Game) AddTournamentWinners() {
 			}
 		}
 	}
+	slog.Info("Finished adding tournament winners")
 }
