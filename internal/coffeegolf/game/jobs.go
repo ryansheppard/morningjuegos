@@ -61,7 +61,7 @@ func (g *Game) AddMissingRounds() {
 				Time:  time.Unix(day, 0),
 				Valid: true,
 			}
-			originalDate := nT.Time.Format("Jan-01")
+			originalDate := nT.Time.Format("Jan 2006 02")
 			for _, player := range players {
 				_, err := g.query.HasPlayed(g.ctx, database.HasPlayedParams{
 					PlayerID:     player,
