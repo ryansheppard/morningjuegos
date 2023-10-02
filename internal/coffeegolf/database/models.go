@@ -5,6 +5,7 @@
 package database
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -28,6 +29,7 @@ type Round struct {
 	FirstRound   bool
 	Percentage   string
 	InsertedBy   string
+	RoundDate    sql.NullTime
 }
 
 type Tournament struct {
