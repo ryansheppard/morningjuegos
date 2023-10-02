@@ -31,10 +31,8 @@ func (g *Game) AddMissingRounds() {
 			slog.Error("Failed to get active tournament", "guild", guildID, "error", err)
 		}
 
-		if g.cache != nil {
-			cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
-			g.cache.DeleteKey(cacheKey)
-		}
+		cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
+		g.cache.DeleteKey(cacheKey)
 
 		tournaments = append(tournaments, tournament)
 	}
@@ -118,10 +116,8 @@ func (g *Game) AddTournamentWinners() {
 			continue
 		}
 		if len(tournaments) > 0 {
-			if g.cache != nil {
-				cacheKey := leaderboard.GetLeaderboardCacheKey(guild)
-				g.cache.DeleteKey(cacheKey)
-			}
+			cacheKey := leaderboard.GetLeaderboardCacheKey(guild)
+			g.cache.DeleteKey(cacheKey)
 			inactiveTournaments = append(inactiveTournaments, tournaments...)
 		}
 	}

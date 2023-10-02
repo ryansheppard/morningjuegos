@@ -159,10 +159,8 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			return FirstRound
 		}
 
-		if p.cache != nil {
-			cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
-			p.cache.DeleteKey(cacheKey)
-		}
+		cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
+		p.cache.DeleteKey(cacheKey)
 
 		return BonusRound
 	}
