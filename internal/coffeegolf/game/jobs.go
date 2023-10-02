@@ -66,14 +66,15 @@ func (g *Game) AddMissingRounds() {
 					TournamentID: tournament.ID,
 					RoundDate:    nT,
 				})
+				// TODO: test and fix round date + bug where it adds rounds before the tournament
 				if err == sql.ErrNoRows {
 					slog.Info("Adding missing round", "player", player, "tournament", tournament, "day", day)
 					entry := &database.Round{
 						PlayerID:     player,
 						TournamentID: tournament.ID,
 						TotalStrokes: defaultStrokes,
-						InsertedAt:   time.Unix(day, 0),
 						Percentage:   "",
+						RoundDate:    nT,
 					}
 
 					_, err := g.query.CreateRound(g.ctx, database.CreateRoundParams{
@@ -83,6 +84,7 @@ func (g *Game) AddMissingRounds() {
 						OriginalDate: originalDate,
 						FirstRound:   true,
 						InsertedBy:   "add_missing_rounds",
+						RoundDate:    entry.RoundDate,
 					},
 					)
 					if err != nil {

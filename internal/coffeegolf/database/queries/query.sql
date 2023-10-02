@@ -40,8 +40,8 @@ GROUP BY tournament_placement, player_id;
 -- Round Queries
 -- name: CreateRound :one
 INSERT INTO round
-(tournament_id, player_id, total_strokes, original_date, percentage, first_round, inserted_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+(tournament_id, player_id, total_strokes, original_date, percentage, first_round, inserted_by, round_date)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING *;
 
 -- name: HasPlayedToday :one

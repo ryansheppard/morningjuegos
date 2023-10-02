@@ -184,3 +184,18 @@ func TestParseStrokeLines(t *testing.T) {
 	}
 
 }
+
+func TestDateStringToTime(t *testing.T) {
+	t.Parallel()
+
+	dateString := "Sept 18"
+	want := "2023-09-18 00:00:00 +0000 UTC"
+	got, err := dateStringToTime(dateString)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if want != got.Time.String() {
+		t.Errorf("Expected %s, got %s", want, got.Time)
+	}
+}

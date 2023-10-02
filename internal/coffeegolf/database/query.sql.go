@@ -56,8 +56,8 @@ func (q *Queries) CreateHole(ctx context.Context, arg CreateHoleParams) (Hole, e
 
 const createRound = `-- name: CreateRound :one
 INSERT INTO round
-(tournament_id, player_id, total_strokes, original_date, percentage, first_round, inserted_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+(tournament_id, player_id, total_strokes, original_date, percentage, first_round, inserted_by, round_date)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by, round_date
 `
 
@@ -69,6 +69,7 @@ type CreateRoundParams struct {
 	Percentage   string
 	FirstRound   bool
 	InsertedBy   string
+	RoundDate    sql.NullTime
 }
 
 // Round Queries
@@ -81,6 +82,7 @@ func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round
 		arg.Percentage,
 		arg.FirstRound,
 		arg.InsertedBy,
+		arg.RoundDate,
 	)
 	var i Round
 	err := row.Scan(
