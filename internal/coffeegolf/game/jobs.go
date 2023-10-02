@@ -31,8 +31,10 @@ func (g *Game) AddMissingRounds() {
 			slog.Error("Failed to get active tournament", "guild", guildID, "error", err)
 		}
 
-		cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
-		g.cache.DeleteKey(cacheKey)
+		if g.cache != nil {
+			cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
+			g.cache.DeleteKey(cacheKey)
+		}
 
 		tournaments = append(tournaments, tournament)
 	}
@@ -55,11 +57,16 @@ func (g *Game) AddMissingRounds() {
 
 		for i := int64(0); i < numDaysPlayed; i++ {
 			day := start + (i * 86400)
+			nT := sql.NullTime{
+				Time:  time.Unix(day, 0),
+				Valid: true,
+			}
+			originalDate := nT.Time.Format("Jan-01")
 			for _, player := range players {
 				_, err := g.query.HasPlayed(g.ctx, database.HasPlayedParams{
 					PlayerID:     player,
 					TournamentID: tournament.ID,
-					DateTrunc:    day,
+					RoundDate:    nT,
 				})
 				if err == sql.ErrNoRows {
 					slog.Info("Adding missing round", "player", player, "tournament", tournament, "day", day)
@@ -71,15 +78,18 @@ func (g *Game) AddMissingRounds() {
 						Percentage:   "",
 					}
 
-					g.query.CreateRound(g.ctx, database.CreateRoundParams{
+					_, err := g.query.CreateRound(g.ctx, database.CreateRoundParams{
 						TournamentID: entry.TournamentID,
 						PlayerID:     entry.PlayerID,
 						TotalStrokes: defaultStrokes,
-						OriginalDate: "",
+						OriginalDate: originalDate,
 						FirstRound:   true,
 						InsertedBy:   "add_missing_rounds",
 					},
 					)
+					if err != nil {
+						slog.Error("Failed to create round", "round", entry, "error", err)
+					}
 				} else if err != nil {
 					slog.Error("Failed to check if player has played", "player", player, "tournament", tournament, "day", day, "error", err)
 				}
@@ -108,8 +118,10 @@ func (g *Game) AddTournamentWinners() {
 			continue
 		}
 		if len(tournaments) > 0 {
-			cacheKey := leaderboard.GetLeaderboardCacheKey(guild)
-			g.cache.DeleteKey(cacheKey)
+			if g.cache != nil {
+				cacheKey := leaderboard.GetLeaderboardCacheKey(guild)
+				g.cache.DeleteKey(cacheKey)
+			}
 			inactiveTournaments = append(inactiveTournaments, tournaments...)
 		}
 	}

@@ -578,17 +578,17 @@ SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, 
 FROM round
 WHERE player_id = $1
 AND tournament_id = $2
-AND date_trunc('day', inserted_at) = date_trunc('day', $3)
+AND round_date = $3
 `
 
 type HasPlayedParams struct {
 	PlayerID     int64
 	TournamentID int32
-	DateTrunc    int64
+	RoundDate    sql.NullTime
 }
 
 func (q *Queries) HasPlayed(ctx context.Context, arg HasPlayedParams) (Round, error) {
-	row := q.db.QueryRowContext(ctx, hasPlayed, arg.PlayerID, arg.TournamentID, arg.DateTrunc)
+	row := q.db.QueryRowContext(ctx, hasPlayed, arg.PlayerID, arg.TournamentID, arg.RoundDate)
 	var i Round
 	err := row.Scan(
 		&i.ID,
@@ -610,7 +610,7 @@ SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, 
 FROM round
 WHERE player_id = $1
 AND tournament_id = $2
-AND date_trunc('day', inserted_at) = date_trunc('day', NOW())
+AND round_date = CURRENT_DATE
 `
 
 type HasPlayedTodayParams struct {

@@ -49,14 +49,14 @@ SELECT *
 FROM round
 WHERE player_id = $1
 AND tournament_id = $2
-AND date_trunc('day', inserted_at) = date_trunc('day', NOW());
+AND round_date = CURRENT_DATE;
 
 -- name: HasPlayed :one
 SELECT *
 FROM round
 WHERE player_id = $1
 AND tournament_id = $2
-AND date_trunc('day', inserted_at) = date_trunc('day', $3);
+AND round_date = $3;
 
 -- name: GetLeaders :many
 SELECT SUM(total_strokes) AS total_strokes, player_id
