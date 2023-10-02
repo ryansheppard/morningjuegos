@@ -212,8 +212,8 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 	slog.Info("Generating leaderboard string", "guild", params.GuildID, "tournament", params)
 	strokeLeaders, err := l.query.GetLeaders(l.ctx, database.GetLeadersParams{
 		TournamentID: params.TournamentID,
-		InsertedAt:   params.StartTime,
-		InsertedAt_2: params.EndTime,
+		RoundDate:    sql.NullTime{Time: params.StartTime, Valid: true},
+		RoundDate_2:  sql.NullTime{Time: params.EndTime, Valid: true},
 	})
 
 	if err != nil {
@@ -333,7 +333,7 @@ func (l *Leaderboard) getPreviousPlacementEmoji(prev int, current int) string {
 func (l *Leaderboard) getPreviousPlacements(guildID int64, tournamentID int32) map[int64]int {
 	previousPlacements, err := l.query.GetPlacementsForPeriod(l.ctx, database.GetPlacementsForPeriodParams{
 		TournamentID: tournamentID,
-		InsertedAt:   time.Now().Add(-24 * time.Hour),
+		RoundDate:    sql.NullTime{Time: time.Now().Add(-24 * time.Hour), Valid: true},
 	})
 	if err == sql.ErrNoRows {
 		slog.Warn("No previous placements", "guild", guildID)

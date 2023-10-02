@@ -63,8 +63,8 @@ SELECT SUM(total_strokes) AS total_strokes, player_id
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
-AND inserted_at > $2
-AND inserted_at < $3
+AND round_date >= $2
+AND round_date <= $3
 GROUP BY player_id
 ORDER BY total_strokes ASC;
 
@@ -81,7 +81,7 @@ SELECT SUM(total_strokes) AS total_strokes, player_id
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
-AND inserted_at < $2
+AND round_date < $2
 GROUP BY player_id
 ORDER BY total_strokes ASC;
 
