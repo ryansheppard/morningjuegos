@@ -269,8 +269,12 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 		}
 
 		movement := "❌"
+		addedScore := 0
 		if hasPlayed {
 			movement = l.getPreviousPlacementEmoji(prev, i+1)
+			if addPlusTwenty {
+				addedScore = 20
+			}
 		}
 
 		previousWinString := ""
@@ -279,10 +283,6 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 		}
 
 		if hasPlayed || notPlayedX {
-			addedScore := 0
-			if addPlusTwenty {
-				addedScore = 20
-			}
 			strokeString := fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes+int64(addedScore))
 			finalString := strings.Join([]string{
 				strokeString,
