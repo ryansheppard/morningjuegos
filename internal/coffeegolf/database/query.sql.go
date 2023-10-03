@@ -459,6 +459,44 @@ func (q *Queries) GetPlacementsForPeriod(ctx context.Context, arg GetPlacementsF
 	return items, nil
 }
 
+const getStandardDeviation = `-- name: GetStandardDeviation :many
+SELECT player_id, round(stddev(total_strokes), 3) as standard_deviation
+FROM round
+WHERE inserted_by = 'parser'
+AND first_round = 't'
+GROUP BY player_id
+ORDER BY standard_deviation
+`
+
+type GetStandardDeviationRow struct {
+	PlayerID          int64
+	StandardDeviation string
+}
+
+// Stats
+func (q *Queries) GetStandardDeviation(ctx context.Context) ([]GetStandardDeviationRow, error) {
+	rows, err := q.db.QueryContext(ctx, getStandardDeviation)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetStandardDeviationRow
+	for rows.Next() {
+		var i GetStandardDeviationRow
+		if err := rows.Scan(&i.PlayerID, &i.StandardDeviation); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTournamentPlacements = `-- name: GetTournamentPlacements :many
 SELECT tournament_id, player_id, tournament_placement, strokes, inserted_at, inserted_by FROM tournament_placement WHERE tournament_id = $1
 `

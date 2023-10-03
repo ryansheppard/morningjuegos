@@ -129,3 +129,13 @@ AND hole.strokes = 1
 GROUP BY round.player_id
 ORDER BY count DESC
 LIMIT 1;
+
+
+-- Stats
+-- name: GetStandardDeviation :many
+SELECT player_id, round(stddev(total_strokes), 3) as standard_deviation
+FROM round
+WHERE inserted_by = 'parser'
+AND first_round = 't'
+GROUP BY player_id
+ORDER BY standard_deviation;

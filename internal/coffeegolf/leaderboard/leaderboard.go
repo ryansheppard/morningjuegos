@@ -367,6 +367,8 @@ func (l *Leaderboard) generateStats(tournamentID int32) string {
 	mostCommon := l.getFirstMostCommonHole(tournamentID)
 	lastCommon := l.getLastMostCommonHole(tournamentID)
 	hardestHole := l.getHardestHole(tournamentID)
+	bestPerformers := l.getBestPerformers()
+	worstPerformers := l.getWorstPerformers()
 
 	statsHeader := "Stats powered by AWS Next Gen Stats"
 	statsStr := strings.Join([]string{
@@ -376,6 +378,8 @@ func (l *Leaderboard) generateStats(tournamentID int32) string {
 		mostCommon,
 		lastCommon,
 		hardestHole,
+		bestPerformers,
+		worstPerformers,
 	}, "\n")
 
 	return statsStr
@@ -427,4 +431,60 @@ func (l *Leaderboard) getHardestHole(tournamentID int32) string {
 		slog.Error("Failed to get hardest hole", "tournament", tournamentID, "error", err)
 	}
 	return fmt.Sprintf("Hardest hole: %s with an average of %0.2f strokes", colors[hole.Color], hole.Strokes)
+}
+
+func (l *Leaderboard) getPerformers(reverse bool) ([]string, string, error) {
+	performers, err := l.query.GetStandardDeviation(l.ctx)
+	if err == sql.ErrNoRows {
+		slog.Info("No std dev found")
+		return []string{}, "", err
+	} else if err != nil {
+		slog.Error("Failed to std dev", "error", err)
+		return []string{}, "", err
+	}
+
+	if reverse {
+		for i, j := 0, len(performers)-1; i < j; i, j = i+1, j-1 {
+			performers[i], performers[j] = performers[j], performers[i]
+		}
+	}
+
+	stdDev := ""
+	performerIDs := []string{}
+	for i, performer := range performers {
+		if i == 0 || performer.StandardDeviation == performers[i-1].StandardDeviation {
+			performerIDs = append(performerIDs, fmt.Sprintf("<@%d>", performer.PlayerID))
+			stdDev = performer.StandardDeviation
+		} else {
+			break
+		}
+	}
+
+	return performerIDs, stdDev, nil
+}
+
+func (l *Leaderboard) getWorstPerformers() string {
+	worstPerformerString := ""
+
+	worstPerformerIDs, stdDev, err := l.getPerformers(true)
+	if err != nil {
+		return worstPerformerString
+	}
+
+	worstPerformerMentions := strings.Join(worstPerformerIDs, ", ")
+
+	return fmt.Sprintf("[All Time] Least consistent players: %v with a standard deviation of %s strokes", worstPerformerMentions, stdDev)
+}
+
+func (l *Leaderboard) getBestPerformers() string {
+	bestPerformersString := ""
+
+	bestPerformerIDs, stdDev, err := l.getPerformers(false)
+	if err != nil {
+		return bestPerformersString
+	}
+
+	bestPerformersMentions := strings.Join(bestPerformerIDs, ", ")
+
+	return fmt.Sprintf("[All Time] Most consistent players: %v with a standard deviation of %s strokes", bestPerformersMentions, stdDev)
 }
