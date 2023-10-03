@@ -16,7 +16,7 @@ import (
 	cgQueries "github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	coffeegolf "github.com/ryansheppard/morningjuegos/internal/coffeegolf/game"
 	"github.com/ryansheppard/morningjuegos/internal/discord"
-	"github.com/ryansheppard/morningjuegos/internal/messages"
+	"github.com/ryansheppard/morningjuegos/internal/messenger"
 )
 
 var botCmd = &cobra.Command{
@@ -39,7 +39,7 @@ var botCmd = &cobra.Command{
 		c := cache.New(ctx, redisAddr, redisDBInt)
 
 		natsURL := os.Getenv("NATS_URL")
-		m := messages.New(natsURL)
+		m := messenger.New(natsURL)
 
 		dsn := os.Getenv("DB_DSN")
 		db, err := sql.Open("postgres", dsn)
@@ -70,6 +70,7 @@ var botCmd = &cobra.Command{
 		sc := make(chan os.Signal, 1)
 		signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 		<-sc
+		slog.Info("Shutting down MorningJuegos bot")
 
 		d.Discord.Close()
 	},

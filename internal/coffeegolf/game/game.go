@@ -9,7 +9,7 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/leaderboard"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/parser"
-	"github.com/ryansheppard/morningjuegos/internal/messages"
+	"github.com/ryansheppard/morningjuegos/internal/messenger"
 )
 
 type Game struct {
@@ -18,11 +18,11 @@ type Game struct {
 	cache       *cache.Cache
 	Parser      *parser.Parser
 	leaderboard *leaderboard.Leaderboard
-	messenger   *messages.Messenger
+	messenger   *messenger.Messenger
 }
 
 // Todo replace with withoptions
-func New(ctx context.Context, query *database.Queries, cache *cache.Cache, db *sql.DB, messenger *messages.Messenger) *Game {
+func New(ctx context.Context, query *database.Queries, cache *cache.Cache, db *sql.DB, messenger *messenger.Messenger) *Game {
 	parser := parser.New(ctx, query, db, cache, messenger)
 	leaderboard := leaderboard.New(ctx, query, cache)
 	return &Game{

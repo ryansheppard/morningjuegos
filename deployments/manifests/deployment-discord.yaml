@@ -30,6 +30,8 @@ spec:
               value: "0"
             - name: TZ
               value: America/New_York
+            - name: NATS_URL
+              value: nats.default.svc.cluster.local:4222
           envFrom:
             - secretRef:
                 name: morning-juegos

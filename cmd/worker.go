@@ -8,20 +8,17 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
-	"time"
-
-	"github.com/go-co-op/gocron"
-	"github.com/spf13/cobra"
 
 	_ "github.com/lib/pq"
 	"github.com/ryansheppard/morningjuegos/internal/cache"
 	cgQueries "github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	coffeegolf "github.com/ryansheppard/morningjuegos/internal/coffeegolf/game"
-	"github.com/ryansheppard/morningjuegos/internal/messages"
+	"github.com/ryansheppard/morningjuegos/internal/messenger"
+	"github.com/spf13/cobra"
 )
 
-var jobsCmd = &cobra.Command{
-	Use:   "jobs",
+var workerCmd = &cobra.Command{
+	Use:   "worker",
 	Short: "Runs the discord jobs",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
@@ -47,32 +44,21 @@ var jobsCmd = &cobra.Command{
 		}
 
 		natsURL := os.Getenv("NATS_URL")
-		m := messages.New(natsURL)
+		m := messenger.New(natsURL)
 
 		q := cgQueries.New(db)
 
 		cg := coffeegolf.New(ctx, q, c, db, m)
+		cg.ConfigureSubscribers()
 
-		newYork, err := time.LoadLocation("America/New_York")
-		if err != nil {
-			slog.Error("Error loading location", "error", err)
-			os.Exit(1)
-		}
-
-		s := gocron.NewScheduler(newYork)
-		s.Every(15).Minute().Do(cg.AddMissingRounds)
-		s.Every(15).Minute().Do(cg.AddTournamentWinners)
-		s.StartAsync()
-
-		slog.Info("MorningJuegos jobs are now running. Press CTRL-C to exit.")
+		slog.Info("MorningJuegos worker is now running. Press CTRL-C to exit.")
 		sc := make(chan os.Signal, 1)
 		signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 		<-sc
-		s.Stop()
-
+		slog.Info("Shutting down MorningJuegos worker")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(jobsCmd)
+	rootCmd.AddCommand(workerCmd)
 }

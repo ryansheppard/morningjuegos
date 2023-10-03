@@ -13,7 +13,8 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/cache"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/leaderboard"
-	"github.com/ryansheppard/morningjuegos/internal/messages"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/messages"
+	"github.com/ryansheppard/morningjuegos/internal/messenger"
 )
 
 const (
@@ -31,10 +32,10 @@ type Parser struct {
 	queries   *database.Queries
 	db        *sql.DB
 	cache     *cache.Cache
-	messenger *messages.Messenger
+	messenger *messenger.Messenger
 }
 
-func New(ctx context.Context, queries *database.Queries, db *sql.DB, cache *cache.Cache, messenger *messages.Messenger) *Parser {
+func New(ctx context.Context, queries *database.Queries, db *sql.DB, cache *cache.Cache, messenger *messenger.Messenger) *Parser {
 	return &Parser{
 		ctx:       ctx,
 		queries:   queries,
@@ -88,6 +89,17 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 				slog.Error("Failed to create tournament", "guild", guildID, "error", err)
 				return Failed
 			}
+
+			msg := messages.TournamentCreated{
+				GuildID: guildID,
+			}
+			bytes, err := msg.AsBytes()
+			if err != nil {
+				slog.Error("Failed to marshal message", "message", msg, "error", err)
+			} else {
+				p.messenger.Publish(messages.TournamentCreatedKey, bytes)
+			}
+
 			slog.Info("Created tournament", "tournament", tournament)
 		} else if err != nil {
 			slog.Error("Failed to get active tournament", "guild", guildID, "error", err)
@@ -170,7 +182,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 		if err != nil {
 			slog.Error("Failed to marshal message", "message", msg, "error", err)
 		} else {
-			p.messenger.Publish(msg.Key(), bytes)
+			p.messenger.Publish(messages.RoundCreatedKey, bytes)
 		}
 
 		// clear cache

@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: morning-juegos-jobs
+  name: morning-juegos-worker
   labels:
     app: morning-juegos
-    component: jobs
+    component: worker
 spec:
   selector:
     matchLabels:
       app: morning-juegos
-      component: jobs
+      component: worker
   template:
     metadata:
       labels:
         app: morning-juegos
-        component: jobs
+        component: worker
     spec:
       containers:
         - name: morning-juegos
@@ -22,7 +22,7 @@ spec:
           command:
             - "/morningjuegos"
           args:
-            - "jobs"
+            - "worker"
           env:
             - name: REDIS_ADDR
               value: redis.default.svc.cluster.local:6379
@@ -30,6 +30,8 @@ spec:
               value: "0"
             - name: TZ
               value: America/New_York
+            - name: NATS_URL
+              value: nats.default.svc.cluster.local:4222
           envFrom:
             - secretRef:
                 name: morning-juegos

@@ -1,4 +1,4 @@
-package messages
+package messenger
 
 import (
 	"log/slog"
