@@ -85,13 +85,13 @@ AND round_date < $2
 GROUP BY player_id
 ORDER BY total_strokes ASC;
 
--- name: GetWorstRound :one
-SELECT *
+-- name: GetWorstRounds :many
+SELECT CAST(MAX(total_strokes) AS INTEGER) AS total_strokes, player_id
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
-ORDER BY total_strokes DESC
-LIMIT 1;
+GROUP BY player_id
+ORDER BY total_strokes DESC;
 
 -- Hole Queries
 -- name: CreateHole :one
@@ -118,7 +118,7 @@ GROUP BY color
 ORDER BY strokes DESC
 LIMIT 1;
 
--- name: GetHoleInOneLeader :one
+-- name: GetHoleInOneLeaders :many
 SELECT COUNT(*) AS count, round.player_id
 FROM hole
 LEFT JOIN round ON hole.round_id = round.id
@@ -127,9 +127,7 @@ AND round.first_round = TRUE
 AND round.player_id IS NOT NULL
 AND hole.strokes = 1
 GROUP BY round.player_id
-ORDER BY count DESC
-LIMIT 1;
-
+ORDER BY count DESC;
 
 -- Stats
 -- name: GetStandardDeviation :many

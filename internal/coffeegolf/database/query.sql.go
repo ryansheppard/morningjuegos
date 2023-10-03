@@ -278,7 +278,7 @@ func (q *Queries) GetHardestHole(ctx context.Context, tournamentID int32) (GetHa
 	return i, err
 }
 
-const getHoleInOneLeader = `-- name: GetHoleInOneLeader :one
+const getHoleInOneLeaders = `-- name: GetHoleInOneLeaders :many
 SELECT COUNT(*) AS count, round.player_id
 FROM hole
 LEFT JOIN round ON hole.round_id = round.id
@@ -288,19 +288,34 @@ AND round.player_id IS NOT NULL
 AND hole.strokes = 1
 GROUP BY round.player_id
 ORDER BY count DESC
-LIMIT 1
 `
 
-type GetHoleInOneLeaderRow struct {
+type GetHoleInOneLeadersRow struct {
 	Count    int64
 	PlayerID sql.NullInt64
 }
 
-func (q *Queries) GetHoleInOneLeader(ctx context.Context, tournamentID int32) (GetHoleInOneLeaderRow, error) {
-	row := q.db.QueryRowContext(ctx, getHoleInOneLeader, tournamentID)
-	var i GetHoleInOneLeaderRow
-	err := row.Scan(&i.Count, &i.PlayerID)
-	return i, err
+func (q *Queries) GetHoleInOneLeaders(ctx context.Context, tournamentID int32) ([]GetHoleInOneLeadersRow, error) {
+	rows, err := q.db.QueryContext(ctx, getHoleInOneLeaders, tournamentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetHoleInOneLeadersRow
+	for rows.Next() {
+		var i GetHoleInOneLeadersRow
+		if err := rows.Scan(&i.Count, &i.PlayerID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getInactiveTournaments = `-- name: GetInactiveTournaments :many
@@ -586,31 +601,41 @@ func (q *Queries) GetUniquePlayersInTournament(ctx context.Context, tournamentID
 	return items, nil
 }
 
-const getWorstRound = `-- name: GetWorstRound :one
-SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by, round_date
+const getWorstRounds = `-- name: GetWorstRounds :many
+SELECT CAST(MAX(total_strokes) AS INTEGER) AS total_strokes, player_id
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
+GROUP BY player_id
 ORDER BY total_strokes DESC
-LIMIT 1
 `
 
-func (q *Queries) GetWorstRound(ctx context.Context, tournamentID int32) (Round, error) {
-	row := q.db.QueryRowContext(ctx, getWorstRound, tournamentID)
-	var i Round
-	err := row.Scan(
-		&i.ID,
-		&i.TournamentID,
-		&i.PlayerID,
-		&i.TotalStrokes,
-		&i.OriginalDate,
-		&i.InsertedAt,
-		&i.FirstRound,
-		&i.Percentage,
-		&i.InsertedBy,
-		&i.RoundDate,
-	)
-	return i, err
+type GetWorstRoundsRow struct {
+	TotalStrokes int32
+	PlayerID     int64
+}
+
+func (q *Queries) GetWorstRounds(ctx context.Context, tournamentID int32) ([]GetWorstRoundsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getWorstRounds, tournamentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetWorstRoundsRow
+	for rows.Next() {
+		var i GetWorstRoundsRow
+		if err := rows.Scan(&i.TotalStrokes, &i.PlayerID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const hasPlayed = `-- name: HasPlayed :one

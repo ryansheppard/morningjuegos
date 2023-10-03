@@ -374,25 +374,72 @@ func (l *Leaderboard) generateStats(tournamentID int32) string {
 }
 
 func (l *Leaderboard) getHoleInOneLeader(tournamentID int32) string {
-	holeInOneLeader, err := l.query.GetHoleInOneLeader(l.ctx, tournamentID)
+	holeInOneLeaders, err := l.query.GetHoleInOneLeaders(l.ctx, tournamentID)
 	if err == sql.ErrNoRows {
-		slog.Warn("No hole in one leader", "tournament", tournamentID)
+		slog.Warn("No hole in one leaders", "tournament", tournamentID)
+		return ""
 	} else if err != nil {
-		slog.Error("Failed to get hole in one leader", "tournament", tournamentID, "error", err)
-	} else {
-		plural := ""
-		if holeInOneLeader.PlayerID.Int64 != 1 {
-			plural = "s"
-		}
-		return fmt.Sprintf("Most hole in ones: <@%d> with %d hole in one%s", holeInOneLeader.PlayerID.Int64, holeInOneLeader.Count, plural)
+		slog.Error("Failed to get hole in one leaders", "tournament", tournamentID, "error", err)
+		return ""
 	}
 
-	return ""
+	if len(holeInOneLeaders) == 0 {
+		return ""
+	}
+
+	holeInOnes := int64(0)
+	leaders := []string{}
+	for i, leader := range holeInOneLeaders {
+		if i == 0 || leader.Count == holeInOneLeaders[0].Count {
+			leaders = append(leaders, fmt.Sprintf("<@%d>", leader.PlayerID.Int64))
+			holeInOnes = leader.Count
+		} else {
+			break
+		}
+	}
+
+	plural := ""
+	if holeInOnes > 1 {
+		plural = "s"
+	}
+
+	holeInOneMentions := strings.Join(leaders, ", ")
+
+	return fmt.Sprintf("Most hole in ones: %s with %d hole in one%s", holeInOneMentions, holeInOnes, plural)
 }
 
 func (l *Leaderboard) getWorstRound(tournamentID int32) string {
-	worstRound, _ := l.query.GetWorstRound(l.ctx, tournamentID)
-	return fmt.Sprintf("Worst round of the tournament: <@%d>, %d strokes 🤡", worstRound.PlayerID, worstRound.TotalStrokes)
+	worstRounds, err := l.query.GetWorstRounds(l.ctx, tournamentID)
+	if err == sql.ErrNoRows {
+		slog.Warn("No worst rounds", "tournament", tournamentID)
+		return ""
+	} else if err != nil {
+		slog.Error("Failed to get worst rounds", "tournament", tournamentID, "error", err)
+		return ""
+	}
+	if len(worstRounds) == 0 {
+		return ""
+	}
+
+	strokes := int64(0)
+	worst := []string{}
+	for i, worstRound := range worstRounds {
+		if i == 0 || worstRound.TotalStrokes == worstRounds[0].TotalStrokes {
+			worst = append(worst, fmt.Sprintf("<@%d>", worstRound.PlayerID))
+			strokes = int64(worstRound.TotalStrokes)
+		} else {
+			break
+		}
+	}
+
+	plural := ""
+	if len(worst) > 1 {
+		plural = "s"
+	}
+
+	worstMentions := strings.Join(worst, ", ")
+
+	return fmt.Sprintf("Worst round%s of the tournament: %s, %d strokes 🤡%s", plural, worstMentions, strokes, plural)
 }
 
 func (l *Leaderboard) getFirstMostCommonHole(tournamentID int32) string {
