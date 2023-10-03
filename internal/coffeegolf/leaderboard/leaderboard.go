@@ -206,9 +206,17 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 	notPlayedX := false
 	notPlayedXRaw, err := l.cache.GetKey("notPlayedX")
 	if err != nil || notPlayedXRaw == nil {
-		slog.Info("Failed to get notPlayedX from cache, defaulting to true", "error", err)
+		slog.Info("Failed to get notPlayedX from cache, defaulting to false", "error", err)
 	} else {
 		notPlayedX = notPlayedXRaw.(string) == "true"
+	}
+
+	addPlusTwenty := false
+	addPlusRaw, err := l.cache.GetKey("addPlusTwenty")
+	if err != nil || addPlusRaw == nil {
+		slog.Info("Failed to get addPlusTwenty from cache, defaulting to false", "error", err)
+	} else {
+		addPlusTwenty = addPlusRaw.(string) == "true"
 	}
 
 	slog.Info("Generating leaderboard string", "guild", params.GuildID, "tournament", params)
@@ -271,7 +279,11 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 		}
 
 		if hasPlayed || notPlayedX {
-			strokeString := fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes)
+			addedScore := 0
+			if addPlusTwenty {
+				addedScore = 20
+			}
+			strokeString := fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes+int64(addedScore))
 			finalString := strings.Join([]string{
 				strokeString,
 				placementString,
@@ -298,7 +310,7 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 	if len(notYetPlayed) > 0 {
 		rand.Shuffle(len(notYetPlayed), func(i, j int) { notYetPlayed[i], notYetPlayed[j] = notYetPlayed[j], notYetPlayed[i] })
 
-		notYetPlayedString = "\nNot Played Yet\n" + strings.Join(notYetPlayed, "\n") + "\n"
+		notYetPlayedString = "\n\nNot Played Yet\n" + strings.Join(notYetPlayed, "\n") + "\n"
 	}
 
 	return leaderString + notYetPlayedString
