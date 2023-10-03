@@ -203,22 +203,6 @@ type generateLeaderStringParams struct {
 }
 
 func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) string {
-	notPlayedX := false
-	notPlayedXRaw, err := l.cache.GetKey("notPlayedX")
-	if err != nil || notPlayedXRaw == nil {
-		slog.Info("Failed to get notPlayedX from cache, defaulting to false", "error", err)
-	} else {
-		notPlayedX = notPlayedXRaw.(string) == "true"
-	}
-
-	addPlusTwenty := false
-	addPlusRaw, err := l.cache.GetKey("addPlusTwenty")
-	if err != nil || addPlusRaw == nil {
-		slog.Info("Failed to get addPlusTwenty from cache, defaulting to false", "error", err)
-	} else {
-		addPlusTwenty = addPlusRaw.(string) == "true"
-	}
-
 	slog.Info("Generating leaderboard string", "guild", params.GuildID, "tournament", params)
 	strokeLeaders, err := l.query.GetLeaders(l.ctx, database.GetLeadersParams{
 		TournamentID: params.TournamentID,
@@ -269,13 +253,8 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 		}
 
 		movement := "❌"
-		addedScore := 0
 		if hasPlayed {
 			movement = l.getPreviousPlacementEmoji(prev, i+1)
-		} else {
-			if addPlusTwenty {
-				addedScore = 20
-			}
 		}
 
 		previousWinString := ""
@@ -283,8 +262,8 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 			previousWinString = l.getCrowns(params.GuildID, leader.PlayerID)
 		}
 
-		if hasPlayed || notPlayedX {
-			strokeString := fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes+int64(addedScore))
+		if hasPlayed {
+			strokeString := fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes)
 			finalString := strings.Join([]string{
 				strokeString,
 				placementString,
@@ -299,12 +278,8 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 	}
 
 	leaderString := "No one has played today!\n"
-	if !notPlayedX {
-		if len(leaderStrings) > 0 {
-			leaderString = "Leaders\n" + strings.Join(leaderStrings, "\n")
-		}
-	} else {
-		leaderString = strings.Join(leaderStrings, "\n")
+	if len(leaderStrings) > 0 {
+		leaderString = "Leaders\n" + strings.Join(leaderStrings, "\n")
 	}
 
 	notYetPlayedString := ""
