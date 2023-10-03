@@ -218,6 +218,43 @@ func (q *Queries) GetAllGuilds(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
+const getBestRounds = `-- name: GetBestRounds :many
+SELECT CAST(MIN(total_strokes) AS INTEGER) AS total_strokes, player_id
+FROM round
+WHERE tournament_id = $1
+AND first_round = TRUE
+GROUP BY player_id
+ORDER BY total_strokes ASC
+`
+
+type GetBestRoundsRow struct {
+	TotalStrokes int32
+	PlayerID     int64
+}
+
+func (q *Queries) GetBestRounds(ctx context.Context, tournamentID int32) ([]GetBestRoundsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getBestRounds, tournamentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetBestRoundsRow
+	for rows.Next() {
+		var i GetBestRoundsRow
+		if err := rows.Scan(&i.TotalStrokes, &i.PlayerID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getFinalLeaders = `-- name: GetFinalLeaders :many
 SELECT SUM(total_strokes) AS total_strokes, player_id
 FROM round

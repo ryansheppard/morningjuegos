@@ -349,9 +349,11 @@ func (l *Leaderboard) getPreviousPlacements(guildID int64, tournamentID int32) m
 	return previous
 }
 
+// TODO: this should not have a newline for empty results
 func (l *Leaderboard) generateStats(tournamentID int32) string {
 	holeInOneString := l.getHoleInOneLeader(tournamentID)
-	worstRoundString := l.getWorstRound(tournamentID)
+	bestRoundString := l.getBestRounds(tournamentID)
+	worstRoundString := l.getWorstRounds(tournamentID)
 	mostCommon := l.getFirstMostCommonHole(tournamentID)
 	lastCommon := l.getLastMostCommonHole(tournamentID)
 	hardestHole := l.getHardestHole(tournamentID)
@@ -362,6 +364,7 @@ func (l *Leaderboard) generateStats(tournamentID int32) string {
 	statsStr := strings.Join([]string{
 		statsHeader,
 		holeInOneString,
+		bestRoundString,
 		worstRoundString,
 		mostCommon,
 		lastCommon,
@@ -408,36 +411,73 @@ func (l *Leaderboard) getHoleInOneLeader(tournamentID int32) string {
 	return fmt.Sprintf("Most hole in ones: %s with %d hole in one%s", holeInOneMentions, holeInOnes, plural)
 }
 
-func (l *Leaderboard) getWorstRound(tournamentID int32) string {
-	worstRounds, err := l.query.GetWorstRounds(l.ctx, tournamentID)
+// TOOD: dedupe these two methods
+func (l *Leaderboard) getBestRounds(tournamentID int32) string {
+	rounds, err := l.query.GetBestRounds(l.ctx, tournamentID)
 	if err == sql.ErrNoRows {
-		slog.Warn("No worst rounds", "tournament", tournamentID)
+		slog.Warn("No best rounds", "tournament", tournamentID)
 		return ""
 	} else if err != nil {
-		slog.Error("Failed to get worst rounds", "tournament", tournamentID, "error", err)
+		slog.Error("Failed to get best rounds", "tournament", tournamentID, "error", err)
 		return ""
 	}
-	if len(worstRounds) == 0 {
+	if len(rounds) == 0 {
 		return ""
 	}
 
 	strokes := int64(0)
-	worst := []string{}
-	for i, worstRound := range worstRounds {
-		if i == 0 || worstRound.TotalStrokes == worstRounds[0].TotalStrokes {
-			worst = append(worst, fmt.Sprintf("<@%d>", worstRound.PlayerID))
-			strokes = int64(worstRound.TotalStrokes)
+	mentions := []string{}
+	for i, round := range rounds {
+		fmt.Println(round)
+		if i == 0 || round.TotalStrokes == rounds[0].TotalStrokes {
+			mentions = append(mentions, fmt.Sprintf("<@%d>", round.PlayerID))
+			strokes = int64(round.TotalStrokes)
 		} else {
 			break
 		}
 	}
 
 	plural := ""
-	if len(worst) > 1 {
+	if len(mentions) > 1 {
 		plural = "s"
 	}
 
-	worstMentions := strings.Join(worst, ", ")
+	bestMentions := strings.Join(mentions, ", ")
+
+	return fmt.Sprintf("Best round%s of the tournament: %s, %d strokes 🙇", plural, bestMentions, strokes)
+}
+
+func (l *Leaderboard) getWorstRounds(tournamentID int32) string {
+	rounds, err := l.query.GetBestRounds(l.ctx, tournamentID)
+	if err == sql.ErrNoRows {
+		slog.Warn("No best rounds", "tournament", tournamentID)
+		return ""
+	} else if err != nil {
+		slog.Error("Failed to get best rounds", "tournament", tournamentID, "error", err)
+		return ""
+	}
+	if len(rounds) == 0 {
+		return ""
+	}
+
+	strokes := int64(0)
+	mentions := []string{}
+	for i, round := range rounds {
+		fmt.Println(round)
+		if i == 0 || round.TotalStrokes == rounds[0].TotalStrokes {
+			mentions = append(mentions, fmt.Sprintf("<@%d>", round.PlayerID))
+			strokes = int64(round.TotalStrokes)
+		} else {
+			break
+		}
+	}
+
+	plural := ""
+	if len(mentions) > 1 {
+		plural = "s"
+	}
+
+	worstMentions := strings.Join(mentions, ", ")
 
 	return fmt.Sprintf("Worst round%s of the tournament: %s, %d strokes 🤡%s", plural, worstMentions, strokes, plural)
 }

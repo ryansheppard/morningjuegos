@@ -93,6 +93,14 @@ AND first_round = TRUE
 GROUP BY player_id
 ORDER BY total_strokes DESC;
 
+-- name: GetBestRounds :many
+SELECT CAST(MIN(total_strokes) AS INTEGER) AS total_strokes, player_id
+FROM round
+WHERE tournament_id = $1
+AND first_round = TRUE
+GROUP BY player_id
+ORDER BY total_strokes ASC;
+
 -- Hole Queries
 -- name: CreateHole :one
 INSERT INTO hole (round_id, color, strokes, hole_number, inserted_by) VALUES ($1, $2, $3, $4, $5) RETURNING *;
