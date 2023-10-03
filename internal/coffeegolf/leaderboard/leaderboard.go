@@ -208,7 +208,7 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 	if err != nil || notPlayedXRaw == nil {
 		slog.Info("Failed to get notPlayedX from cache, defaulting to true", "error", err)
 	} else {
-		notPlayedX = notPlayedXRaw.(bool)
+		notPlayedX = notPlayedXRaw.(string) == "true"
 	}
 
 	slog.Info("Generating leaderboard string", "guild", params.GuildID, "tournament", params)
