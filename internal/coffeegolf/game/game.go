@@ -42,7 +42,7 @@ func (g *Game) LeaderboardCmd(s *discordgo.Session, i *discordgo.InteractionCrea
 	}
 
 	if option, ok := optionMap["date-option"]; ok {
-		params.AddDate(option.StringValue())
+		params.SetDate(option.StringValue())
 	}
 
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

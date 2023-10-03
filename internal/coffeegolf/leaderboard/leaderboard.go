@@ -48,7 +48,7 @@ type GenerateLeaderboardParams struct {
 	Date    string
 }
 
-func (p *GenerateLeaderboardParams) AddDate(date string) {
+func (p *GenerateLeaderboardParams) SetDate(date string) {
 	p.Date = date
 }
 
