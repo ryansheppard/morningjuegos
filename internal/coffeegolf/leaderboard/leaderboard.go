@@ -272,6 +272,7 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 		addedScore := 0
 		if hasPlayed {
 			movement = l.getPreviousPlacementEmoji(prev, i+1)
+		} else {
 			if addPlusTwenty {
 				addedScore = 20
 			}
