@@ -48,7 +48,7 @@ type GenerateLeaderboardParams struct {
 	Date    string
 }
 
-func (p *GenerateLeaderboardParams) AddDate(date string) {
+func (p *GenerateLeaderboardParams) SetDate(date string) {
 	p.Date = date
 }
 
@@ -103,11 +103,9 @@ func (l *Leaderboard) GenerateLeaderboard(params GenerateLeaderboardParams) stri
 	cacheKey := ""
 	if includeEmoji {
 		cacheKey = GetLeaderboardCacheKey(guildID)
-		if l.cache != nil {
-			cached, err = l.cache.GetKey(cacheKey)
-			if err != nil {
-				slog.Error("Failed to get leaderboard from cache", "guild", guildID, "error", err)
-			}
+		cached, err = l.cache.GetKey(cacheKey)
+		if err != nil {
+			slog.Error("Failed to get leaderboard from cache", "guild", guildID, "error", err)
 		}
 	}
 
@@ -136,7 +134,7 @@ func (l *Leaderboard) GenerateLeaderboard(params GenerateLeaderboardParams) stri
 
 	all := header + "\n\n" + leaderString
 
-	if l.cache != nil && includeEmoji {
+	if includeEmoji {
 		l.cache.SetKey(cacheKey, all, 3600)
 	}
 
@@ -165,11 +163,9 @@ func (l *Leaderboard) GenerateStats(guildIDString string) string {
 
 	cacheKey := GetStatsCacheKey(guildID)
 	var cached interface{}
-	if l.cache != nil {
-		cached, err = l.cache.GetKey(cacheKey)
-		if err != nil {
-			slog.Error("Failed to get stats from cache", "guild", guildID, "error", err)
-		}
+	cached, err = l.cache.GetKey(cacheKey)
+	if err != nil {
+		slog.Error("Failed to get stats from cache", "guild", guildID, "error", err)
 	}
 
 	// TODO figure out what happens if we get an error before this
@@ -184,9 +180,7 @@ func (l *Leaderboard) GenerateStats(guildIDString string) string {
 
 	all := header + "\n\n" + statsStr
 
-	if l.cache != nil {
-		l.cache.SetKey(cacheKey, all, 3600)
-	}
+	l.cache.SetKey(cacheKey, all, 3600)
 
 	return all
 }
@@ -209,11 +203,19 @@ type generateLeaderStringParams struct {
 }
 
 func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) string {
+	notPlayedX := false
+	notPlayedXRaw, err := l.cache.GetKey("notPlayedX")
+	if err != nil || notPlayedXRaw == nil {
+		slog.Info("Failed to get notPlayedX from cache, defaulting to true", "error", err)
+	} else {
+		notPlayedX = notPlayedXRaw.(bool)
+	}
+
 	slog.Info("Generating leaderboard string", "guild", params.GuildID, "tournament", params)
 	strokeLeaders, err := l.query.GetLeaders(l.ctx, database.GetLeadersParams{
 		TournamentID: params.TournamentID,
-		InsertedAt:   params.StartTime,
-		InsertedAt_2: params.EndTime,
+		RoundDate:    sql.NullTime{Time: params.StartTime, Valid: true},
+		RoundDate_2:  sql.NullTime{Time: params.EndTime, Valid: true},
 	})
 
 	if err != nil {
@@ -250,8 +252,6 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 			prev = previousPlacement
 		}
 
-		movement := l.getPreviousPlacementEmoji(prev, i+1)
-
 		hasPlayed := true
 		if err == sql.ErrNoRows {
 			hasPlayed = false
@@ -260,12 +260,17 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 			continue
 		}
 
+		movement := "❌"
+		if hasPlayed {
+			movement = l.getPreviousPlacementEmoji(prev, i+1)
+		}
+
 		previousWinString := ""
 		if params.IncludeEmoji {
 			previousWinString = l.getCrowns(params.GuildID, leader.PlayerID)
 		}
 
-		if hasPlayed {
+		if hasPlayed || notPlayedX {
 			strokeString := fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes)
 			finalString := strings.Join([]string{
 				strokeString,
@@ -280,7 +285,14 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 		}
 	}
 
-	leaderString := "Leaders\n" + strings.Join(leaderStrings, "\n")
+	leaderString := "No one has played today!\n"
+	if !notPlayedX {
+		if len(leaderStrings) > 0 {
+			leaderString = "Leaders\n" + strings.Join(leaderStrings, "\n")
+		}
+	} else {
+		leaderString = strings.Join(leaderStrings, "\n")
+	}
 
 	notYetPlayedString := ""
 	if len(notYetPlayed) > 0 {
@@ -333,7 +345,7 @@ func (l *Leaderboard) getPreviousPlacementEmoji(prev int, current int) string {
 func (l *Leaderboard) getPreviousPlacements(guildID int64, tournamentID int32) map[int64]int {
 	previousPlacements, err := l.query.GetPlacementsForPeriod(l.ctx, database.GetPlacementsForPeriodParams{
 		TournamentID: tournamentID,
-		InsertedAt:   time.Now().Add(-24 * time.Hour),
+		RoundDate:    sql.NullTime{Time: time.Now().Add(-24 * time.Hour), Valid: true},
 	})
 	if err == sql.ErrNoRows {
 		slog.Warn("No previous placements", "guild", guildID)

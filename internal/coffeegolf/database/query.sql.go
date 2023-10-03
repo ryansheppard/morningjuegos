@@ -56,9 +56,9 @@ func (q *Queries) CreateHole(ctx context.Context, arg CreateHoleParams) (Hole, e
 
 const createRound = `-- name: CreateRound :one
 INSERT INTO round
-(tournament_id, player_id, total_strokes, original_date, percentage, first_round, inserted_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by
+(tournament_id, player_id, total_strokes, original_date, percentage, first_round, inserted_by, round_date)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by, round_date
 `
 
 type CreateRoundParams struct {
@@ -69,6 +69,7 @@ type CreateRoundParams struct {
 	Percentage   string
 	FirstRound   bool
 	InsertedBy   string
+	RoundDate    sql.NullTime
 }
 
 // Round Queries
@@ -81,6 +82,7 @@ func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round
 		arg.Percentage,
 		arg.FirstRound,
 		arg.InsertedBy,
+		arg.RoundDate,
 	)
 	var i Round
 	err := row.Scan(
@@ -93,6 +95,7 @@ func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round
 		&i.FirstRound,
 		&i.Percentage,
 		&i.InsertedBy,
+		&i.RoundDate,
 	)
 	return i, err
 }
@@ -344,16 +347,16 @@ SELECT SUM(total_strokes) AS total_strokes, player_id
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
-AND inserted_at > $2
-AND inserted_at < $3
+AND round_date >= $2
+AND round_date <= $3
 GROUP BY player_id
 ORDER BY total_strokes ASC
 `
 
 type GetLeadersParams struct {
 	TournamentID int32
-	InsertedAt   time.Time
-	InsertedAt_2 time.Time
+	RoundDate    sql.NullTime
+	RoundDate_2  sql.NullTime
 }
 
 type GetLeadersRow struct {
@@ -362,7 +365,7 @@ type GetLeadersRow struct {
 }
 
 func (q *Queries) GetLeaders(ctx context.Context, arg GetLeadersParams) ([]GetLeadersRow, error) {
-	rows, err := q.db.QueryContext(ctx, getLeaders, arg.TournamentID, arg.InsertedAt, arg.InsertedAt_2)
+	rows, err := q.db.QueryContext(ctx, getLeaders, arg.TournamentID, arg.RoundDate, arg.RoundDate_2)
 	if err != nil {
 		return nil, err
 	}
@@ -418,14 +421,14 @@ SELECT SUM(total_strokes) AS total_strokes, player_id
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
-AND inserted_at < $2
+AND round_date < $2
 GROUP BY player_id
 ORDER BY total_strokes ASC
 `
 
 type GetPlacementsForPeriodParams struct {
 	TournamentID int32
-	InsertedAt   time.Time
+	RoundDate    sql.NullTime
 }
 
 type GetPlacementsForPeriodRow struct {
@@ -434,7 +437,7 @@ type GetPlacementsForPeriodRow struct {
 }
 
 func (q *Queries) GetPlacementsForPeriod(ctx context.Context, arg GetPlacementsForPeriodParams) ([]GetPlacementsForPeriodRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPlacementsForPeriod, arg.TournamentID, arg.InsertedAt)
+	rows, err := q.db.QueryContext(ctx, getPlacementsForPeriod, arg.TournamentID, arg.RoundDate)
 	if err != nil {
 		return nil, err
 	}
@@ -546,7 +549,7 @@ func (q *Queries) GetUniquePlayersInTournament(ctx context.Context, tournamentID
 }
 
 const getWorstRound = `-- name: GetWorstRound :one
-SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by
+SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by, round_date
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
@@ -567,26 +570,27 @@ func (q *Queries) GetWorstRound(ctx context.Context, tournamentID int32) (Round,
 		&i.FirstRound,
 		&i.Percentage,
 		&i.InsertedBy,
+		&i.RoundDate,
 	)
 	return i, err
 }
 
 const hasPlayed = `-- name: HasPlayed :one
-SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by
+SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by, round_date
 FROM round
 WHERE player_id = $1
 AND tournament_id = $2
-AND date_trunc('day', inserted_at) = date_trunc('day', $3)
+AND round_date = $3
 `
 
 type HasPlayedParams struct {
 	PlayerID     int64
 	TournamentID int32
-	DateTrunc    int64
+	RoundDate    sql.NullTime
 }
 
 func (q *Queries) HasPlayed(ctx context.Context, arg HasPlayedParams) (Round, error) {
-	row := q.db.QueryRowContext(ctx, hasPlayed, arg.PlayerID, arg.TournamentID, arg.DateTrunc)
+	row := q.db.QueryRowContext(ctx, hasPlayed, arg.PlayerID, arg.TournamentID, arg.RoundDate)
 	var i Round
 	err := row.Scan(
 		&i.ID,
@@ -598,16 +602,17 @@ func (q *Queries) HasPlayed(ctx context.Context, arg HasPlayedParams) (Round, er
 		&i.FirstRound,
 		&i.Percentage,
 		&i.InsertedBy,
+		&i.RoundDate,
 	)
 	return i, err
 }
 
 const hasPlayedToday = `-- name: HasPlayedToday :one
-SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by 
+SELECT id, tournament_id, player_id, total_strokes, original_date, inserted_at, first_round, percentage, inserted_by, round_date 
 FROM round
 WHERE player_id = $1
 AND tournament_id = $2
-AND date_trunc('day', inserted_at) = date_trunc('day', NOW())
+AND round_date = CURRENT_DATE
 `
 
 type HasPlayedTodayParams struct {
@@ -628,6 +633,7 @@ func (q *Queries) HasPlayedToday(ctx context.Context, arg HasPlayedTodayParams) 
 		&i.FirstRound,
 		&i.Percentage,
 		&i.InsertedBy,
+		&i.RoundDate,
 	)
 	return i, err
 }

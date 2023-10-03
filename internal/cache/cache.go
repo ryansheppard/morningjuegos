@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -14,6 +15,7 @@ type Cache struct {
 
 func New(ctx context.Context, address string, database int) *Cache {
 	if address == "" {
+		slog.Info("No redis address provided, skipping caching")
 		return nil
 	}
 
@@ -23,6 +25,8 @@ func New(ctx context.Context, address string, database int) *Cache {
 		DB:       database,
 	})
 
+	slog.Info("Created redis connection", "address", address, "database", database)
+
 	return &Cache{
 		Client: client,
 		Ctx:    ctx,
@@ -30,12 +34,22 @@ func New(ctx context.Context, address string, database int) *Cache {
 }
 
 func (c *Cache) SetKey(key string, value interface{}, ttl int) error {
+	if c == nil {
+		slog.Info("No cache provided, skipping SetKey", "key", key)
+		return nil
+	}
+
 	seconds := time.Duration(ttl) * time.Second
 
 	return c.Client.Set(c.Ctx, key, value, seconds).Err()
 }
 
 func (c *Cache) GetKey(key string) (interface{}, error) {
+	if c == nil {
+		slog.Info("No cache provided, not setting key in cache", "key", key)
+		return nil, nil
+	}
+
 	result, err := c.Client.Get(c.Ctx, key).Result()
 	if err == redis.Nil {
 		return nil, nil
@@ -47,5 +61,10 @@ func (c *Cache) GetKey(key string) (interface{}, error) {
 }
 
 func (c *Cache) DeleteKey(key string) {
+	if c == nil {
+		slog.Info("No cache provided, not deleting key from cache", "key", key)
+		return
+	}
+
 	c.Client.Del(c.Ctx, key)
 }

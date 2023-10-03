@@ -40,8 +40,8 @@ GROUP BY tournament_placement, player_id;
 -- Round Queries
 -- name: CreateRound :one
 INSERT INTO round
-(tournament_id, player_id, total_strokes, original_date, percentage, first_round, inserted_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+(tournament_id, player_id, total_strokes, original_date, percentage, first_round, inserted_by, round_date)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING *;
 
 -- name: HasPlayedToday :one
@@ -49,22 +49,22 @@ SELECT *
 FROM round
 WHERE player_id = $1
 AND tournament_id = $2
-AND date_trunc('day', inserted_at) = date_trunc('day', NOW());
+AND round_date = CURRENT_DATE;
 
 -- name: HasPlayed :one
 SELECT *
 FROM round
 WHERE player_id = $1
 AND tournament_id = $2
-AND date_trunc('day', inserted_at) = date_trunc('day', $3);
+AND round_date = $3;
 
 -- name: GetLeaders :many
 SELECT SUM(total_strokes) AS total_strokes, player_id
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
-AND inserted_at > $2
-AND inserted_at < $3
+AND round_date >= $2
+AND round_date <= $3
 GROUP BY player_id
 ORDER BY total_strokes ASC;
 
@@ -81,7 +81,7 @@ SELECT SUM(total_strokes) AS total_strokes, player_id
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
-AND inserted_at < $2
+AND round_date < $2
 GROUP BY player_id
 ORDER BY total_strokes ASC;
 

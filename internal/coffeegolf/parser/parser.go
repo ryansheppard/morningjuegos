@@ -3,6 +3,7 @@ package parser
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -130,6 +131,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			Percentage:   round.Percentage,
 			FirstRound:   firstRound,
 			InsertedBy:   "parser",
+			RoundDate:    round.RoundDate,
 		})
 
 		if err != nil {
@@ -194,6 +196,10 @@ func NewRoundFromString(message string, guildID int64, playerID int64, tournamen
 	strokesLine := lines[4]
 
 	date := parseDateLine(dateLine)
+	dateTime, err := dateStringToTime(date)
+	if err != nil {
+		return nil, nil, err
+	}
 	totalStrokes, err := parseTotalStrikes(totalStrokeLine)
 	if err != nil {
 		return nil, nil, err
@@ -208,6 +214,7 @@ func NewRoundFromString(message string, guildID int64, playerID int64, tournamen
 		InsertedAt:   time.Now(),
 		TotalStrokes: int32(totalStrokes),
 		Percentage:   percentLine,
+		RoundDate:    dateTime,
 	}, holes, nil
 }
 
@@ -296,4 +303,23 @@ func parseDigitEmoji(digit int) int {
 	}
 
 	return -1
+}
+
+func dateStringToTime(dateString string) (sql.NullTime, error) {
+	split := strings.Split(dateString, " ")
+	month := split[0][:3]
+	day := split[1]
+	year := time.Now().Year()
+
+	dateStr := fmt.Sprintf("%s %s %d", month, day, year)
+	layout := "Jan _2 2006"
+	parsed, err := time.Parse(layout, dateStr)
+	if err != nil {
+		return sql.NullTime{}, err
+	}
+
+	return sql.NullTime{
+		Time:  parsed,
+		Valid: true,
+	}, nil
 }

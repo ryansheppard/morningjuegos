@@ -3,6 +3,7 @@ package game
 import (
 	"database/sql"
 	"log/slog"
+	"math"
 	"time"
 
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
@@ -38,51 +39,60 @@ func (g *Game) AddMissingRounds() {
 		tournaments = append(tournaments, tournament)
 	}
 
-	now := time.Now().Unix()
-
 	for _, tournament := range tournaments {
-		start := tournament.StartTime.Unix()
-		// Skip tournaments that started less than 24 hours ago
-		if now-start < 86400 {
-			continue
-		}
+		start := tournament.StartTime
 
-		numDaysPlayed := (now - start) / 86400
 		players, err := g.query.GetUniquePlayersInTournament(g.ctx, tournament.ID)
 		if err != nil {
 			slog.Error("Failed to get unique players in tournament", "tournament", tournament, "error", err)
 			continue
 		}
 
-		for i := int64(0); i < numDaysPlayed; i++ {
-			day := start + (i * 86400)
+		// Take the time since the start of the tournament, round the float to the nearest integer,
+		// and then subtract one to remove the current day.
+		// Missing rounds should only be added after the entire day has passed.
+		numDaysPlayed := math.Floor(time.Since(start).Hours()/24) - 1
+
+		for i := float64(0); i < numDaysPlayed; i++ {
+			day := start.Add(time.Duration(i) * 24 * time.Hour)
+			nullTime := sql.NullTime{
+				Time:  day,
+				Valid: true,
+			}
 			for _, player := range players {
 				_, err := g.query.HasPlayed(g.ctx, database.HasPlayedParams{
 					PlayerID:     player,
 					TournamentID: tournament.ID,
-					DateTrunc:    day,
+					RoundDate:    nullTime,
 				})
+
 				if err == sql.ErrNoRows {
 					slog.Info("Adding missing round", "player", player, "tournament", tournament, "day", day)
 					entry := &database.Round{
 						PlayerID:     player,
 						TournamentID: tournament.ID,
 						TotalStrokes: defaultStrokes,
-						InsertedAt:   time.Unix(day, 0),
 						Percentage:   "",
+						RoundDate:    nullTime,
 					}
 
-					g.query.CreateRound(g.ctx, database.CreateRoundParams{
+					_, err := g.query.CreateRound(g.ctx, database.CreateRoundParams{
 						TournamentID: entry.TournamentID,
 						PlayerID:     entry.PlayerID,
 						TotalStrokes: defaultStrokes,
-						OriginalDate: "",
+						OriginalDate: day.Format("Jan 02"),
 						FirstRound:   true,
 						InsertedBy:   "add_missing_rounds",
+						RoundDate:    entry.RoundDate,
 					},
 					)
+					if err != nil {
+						slog.Error("Failed to create round", "round", entry, "error", err)
+						continue
+					}
 				} else if err != nil {
 					slog.Error("Failed to check if player has played", "player", player, "tournament", tournament, "day", day, "error", err)
+					continue
 				}
 			}
 		}
@@ -134,7 +144,6 @@ func (g *Game) AddTournamentWinners() {
 				slog.Error("Failed to get final leaders", "tournament", tournament, "error", err)
 				continue
 			}
-			// transaction
 			g.query.CleanTournamentPlacements(g.ctx, tournament.ID)
 			for i, placement := range placements {
 				g.query.CreateTournamentPlacement(g.ctx, database.CreateTournamentPlacementParams{
