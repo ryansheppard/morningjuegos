@@ -611,6 +611,44 @@ func (q *Queries) GetTournamentPlacementsByPosition(ctx context.Context, arg Get
 	return i, err
 }
 
+const getTournamentWinnersForGuild = `-- name: GetTournamentWinnersForGuild :many
+SELECT COUNT(*) AS count, tournament_placement, player_id
+FROM tournament_placement
+LEFT JOIN tournament ON tournament_placement.tournament_id = tournament.id
+WHERE tournament.guild_id = $1
+AND tournament_placement = 1
+GROUP BY tournament_placement, player_id
+`
+
+type GetTournamentWinnersForGuildRow struct {
+	Count               int64
+	TournamentPlacement int32
+	PlayerID            int64
+}
+
+func (q *Queries) GetTournamentWinnersForGuild(ctx context.Context, guildID int64) ([]GetTournamentWinnersForGuildRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTournamentWinnersForGuild, guildID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTournamentWinnersForGuildRow
+	for rows.Next() {
+		var i GetTournamentWinnersForGuildRow
+		if err := rows.Scan(&i.Count, &i.TournamentPlacement, &i.PlayerID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUniquePlayersInTournament = `-- name: GetUniquePlayersInTournament :many
 SELECT DISTINCT player_id FROM round WHERE tournament_id = $1
 `

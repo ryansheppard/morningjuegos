@@ -37,6 +37,14 @@ AND player_id = $2
 AND tournament_placement = $3
 GROUP BY tournament_placement, player_id;
 
+-- name: GetTournamentWinnersForGuild :many
+SELECT COUNT(*) AS count, tournament_placement, player_id
+FROM tournament_placement
+LEFT JOIN tournament ON tournament_placement.tournament_id = tournament.id
+WHERE tournament.guild_id = $1
+AND tournament_placement = 1
+GROUP BY tournament_placement, player_id;
+
 -- Round Queries
 -- name: CreateRound :one
 INSERT INTO round
