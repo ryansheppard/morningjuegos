@@ -9,14 +9,16 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/spf13/cobra"
-
+	"github.com/honeycombio/honeycomb-opentelemetry-go"
+	"github.com/honeycombio/otel-config-go/otelconfig"
 	_ "github.com/lib/pq"
 	"github.com/ryansheppard/morningjuegos/internal/cache"
 	cgQueries "github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	coffeegolf "github.com/ryansheppard/morningjuegos/internal/coffeegolf/game"
 	"github.com/ryansheppard/morningjuegos/internal/discord"
 	"github.com/ryansheppard/morningjuegos/internal/messenger"
+	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel"
 )
 
 var botCmd = &cobra.Command{
@@ -25,6 +27,18 @@ var botCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
 		var err error
+
+		bsp := honeycomb.NewBaggageSpanProcessor()
+		otelShutdown, err := otelconfig.ConfigureOpenTelemetry(
+			otelconfig.WithSpanProcessor(bsp),
+		)
+		if err != nil {
+			slog.Error("Error configuring opentelemetry", "error", err)
+			os.Exit(1)
+		}
+		defer otelShutdown()
+
+		tracer := otel.Tracer("morningjuegos.bot")
 
 		redisAddr := os.Getenv("REDIS_ADDR")
 		redisDB := os.Getenv("REDIS_DB")
@@ -36,7 +50,7 @@ var botCmd = &cobra.Command{
 			}
 		}
 
-		c := cache.New(ctx, redisAddr, redisDBInt)
+		c := cache.New(ctx, redisAddr, redisDBInt, tracer)
 
 		natsURL := os.Getenv("NATS_URL")
 		m := messenger.New(natsURL)
@@ -50,7 +64,7 @@ var botCmd = &cobra.Command{
 
 		q := cgQueries.New(db)
 
-		cg := coffeegolf.New(ctx, q, c, db, m)
+		cg := coffeegolf.New(ctx, q, c, db, m, tracer)
 
 		token := os.Getenv("DISCORD_TOKEN")
 		appID := os.Getenv("DISCORD_APP_ID")

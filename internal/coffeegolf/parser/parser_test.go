@@ -17,7 +17,7 @@ const testString = `Coffee Golf - Sept 18
 func TestIsCoffeeGolf(t *testing.T) {
 	t.Parallel()
 
-	p := New(context.TODO(), nil, nil, nil, nil)
+	p := New(context.TODO(), nil, nil, nil, nil, nil)
 
 	if !p.isCoffeeGolf(testString) {
 		t.Error("Expected true, got false")
@@ -27,7 +27,7 @@ func TestIsCoffeeGolf(t *testing.T) {
 func TestIsNotCoffeeGolf(t *testing.T) {
 	t.Parallel()
 
-	p := New(context.TODO(), nil, nil, nil, nil)
+	p := New(context.TODO(), nil, nil, nil, nil, nil)
 
 	if p.isCoffeeGolf("Connections") {
 		t.Error("Expected true, got false")

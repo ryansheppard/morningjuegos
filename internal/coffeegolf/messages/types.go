@@ -1,6 +1,9 @@
 package messages
 
-import "encoding/json"
+import (
+	"context"
+	"encoding/json"
+)
 
 var (
 	RoundCreatedKey      = "round.created"
@@ -8,9 +11,10 @@ var (
 )
 
 type RoundCreated struct {
-	GuildID      int64 `json:"guild_id"`
-	TournamentID int32 `json:"tournament_id"`
-	PlayerID     int64 `json:"player_id"`
+	GuildID      int64           `json:"guild_id"`
+	TournamentID int32           `json:"tournament_id"`
+	PlayerID     int64           `json:"player_id"`
+	Context      context.Context `json:"context"`
 }
 
 func NewRoundCreatedFromJson(bytes []byte) (RoundCreated, error) {
