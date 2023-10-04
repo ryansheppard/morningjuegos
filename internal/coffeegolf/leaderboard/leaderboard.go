@@ -484,7 +484,7 @@ func (l *Leaderboard) getWorstRounds(ctx context.Context, tournamentID int32) st
 	_, span := l.tracer.Start(ctx, "get-worst-rounds")
 	defer span.End()
 
-	rounds, err := l.query.GetBestRounds(l.ctx, tournamentID)
+	rounds, err := l.query.GetWorstRounds(l.ctx, tournamentID)
 	if err == sql.ErrNoRows {
 		slog.Warn("No best rounds", "tournament", tournamentID)
 		return ""
