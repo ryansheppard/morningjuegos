@@ -3,7 +3,6 @@ package game
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/ryansheppard/morningjuegos/internal/cache"
@@ -42,7 +41,6 @@ func New(ctx context.Context, query *database.Queries, cache *cache.Cache, db *s
 
 func (g *Game) LeaderboardCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	ctx, span := g.tracer.Start(g.ctx, "leaderboard-command")
-	fmt.Println(span.SpanContext().SpanID())
 	defer span.End()
 
 	params := leaderboard.GenerateLeaderboardParams{

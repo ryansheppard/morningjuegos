@@ -3,7 +3,6 @@ package game
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"math"
 	"time"
@@ -32,7 +31,6 @@ func (g *Game) ProcessAddMissingRounds(msg *nats.Msg) {
 		slog.Error("Failed to parse round created message", "error", err)
 	}
 
-	fmt.Println(roundCreated.Context)
 	ctx, span := g.tracer.Start(roundCreated.Context, "process-missing-rounds")
 	defer span.End()
 

@@ -462,7 +462,6 @@ func (l *Leaderboard) getBestRounds(ctx context.Context, tournamentID int32) str
 	strokes := int64(0)
 	mentions := []string{}
 	for i, round := range rounds {
-		fmt.Println(round)
 		if i == 0 || round.TotalStrokes == rounds[0].TotalStrokes {
 			mentions = append(mentions, fmt.Sprintf("<@%d>", round.PlayerID))
 			strokes = int64(round.TotalStrokes)
@@ -500,7 +499,6 @@ func (l *Leaderboard) getWorstRounds(ctx context.Context, tournamentID int32) st
 	strokes := int64(0)
 	mentions := []string{}
 	for i, round := range rounds {
-		fmt.Println(round)
 		if i == 0 || round.TotalStrokes == rounds[0].TotalStrokes {
 			mentions = append(mentions, fmt.Sprintf("<@%d>", round.PlayerID))
 			strokes = int64(round.TotalStrokes)
