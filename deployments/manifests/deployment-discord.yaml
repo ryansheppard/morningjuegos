@@ -23,6 +23,9 @@ spec:
             - "/morningjuegos"
           args:
             - "bot"
+          ports:
+            - containerPort: 15444
+              name: prometheus
           env:
             - name: REDIS_ADDR
               value: redis.default.svc.cluster.local:6379

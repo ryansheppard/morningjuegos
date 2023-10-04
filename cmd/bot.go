@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"github.com/honeycombio/honeycomb-opentelemetry-go"
 	"github.com/honeycombio/otel-config-go/otelconfig"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/ryansheppard/morningjuegos/internal/cache"
 	cgQueries "github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	coffeegolf "github.com/ryansheppard/morningjuegos/internal/coffeegolf/game"
@@ -79,6 +81,10 @@ var botCmd = &cobra.Command{
 			slog.Error("Error configuring discord", "error", err)
 			os.Exit(1)
 		}
+
+		slog.Info("Starting prometheus server on 15444")
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":15444", nil)
 
 		slog.Info("MorningJuegos is now running. Press CTRL-C to exit.")
 		sc := make(chan os.Signal, 1)

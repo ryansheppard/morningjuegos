@@ -308,6 +308,7 @@ func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateL
 	return leaderString + notYetPlayedString
 }
 
+// todo replace with a single query instead of per player
 func (l *Leaderboard) getCrowns(ctx context.Context, guildID int64, playerID int64) string {
 	_, span := l.tracer.Start(ctx, "get-crowns")
 	defer span.End()
