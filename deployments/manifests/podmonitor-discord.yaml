@@ -1,14 +1,14 @@
 apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
+kind: ServiceMonitor
 metadata:
   name: morning-juegos-discord
   labels:
     app: morning-juegos
-    component: discord
 spec:
   selector:
     matchLabels:
       app: morning-juegos
       component: discord
-  podMetricsEndpoints:
-  - port: prometheus
+  endpoints:
+    - port: prom
+      path: /metrics

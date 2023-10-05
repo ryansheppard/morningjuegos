@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: morning-juegos-discord
+  labels:
+    app: morning-juegos
+    component: discord
+spec:
+  selector:
+    app: morning-juegos
+    component: discord
+  ports:
+    - name: metrics
+      port: 15444
