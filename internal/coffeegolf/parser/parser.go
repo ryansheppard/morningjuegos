@@ -15,8 +15,6 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/leaderboard"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/messages"
 	"github.com/ryansheppard/morningjuegos/internal/messenger"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -35,17 +33,15 @@ type Parser struct {
 	db        *sql.DB
 	cache     *cache.Cache
 	messenger *messenger.Messenger
-	tracer    trace.Tracer
 }
 
-func New(ctx context.Context, queries *database.Queries, db *sql.DB, cache *cache.Cache, messenger *messenger.Messenger, tracer trace.Tracer) *Parser {
+func New(ctx context.Context, queries *database.Queries, db *sql.DB, cache *cache.Cache, messenger *messenger.Messenger) *Parser {
 	return &Parser{
 		ctx:       ctx,
 		queries:   queries,
 		db:        db,
 		cache:     cache,
 		messenger: messenger,
-		tracer:    tracer,
 	}
 }
 
@@ -55,23 +51,17 @@ func (p *Parser) isCoffeeGolf(message string) bool {
 
 // ParseGame parses a Coffee Golf game from a Discord message
 func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
-	ctx, span := p.tracer.Start(p.ctx, "parse-message")
-	defer span.End()
-
 	message := m.Content
 
 	isCoffeGolf := p.isCoffeeGolf(message)
 
 	if isCoffeGolf {
-		span.AddEvent("coffee-golf-message")
 		slog.Info("Processing a coffee golf message")
 
 		guildID, err := strconv.ParseInt(m.GuildID, 10, 64)
 		if err != nil {
 			return Failed
 		}
-
-		span.SetAttributes(attribute.Int64("guild.id", guildID))
 
 		playerID, err := strconv.ParseInt(m.Author.ID, 10, 64)
 		if err != nil {
@@ -83,7 +73,6 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			StartTime: time.Now(),
 		})
 		if err == sql.ErrNoRows {
-			span.AddEvent("creating-tournament")
 			slog.Info("No active tournament found, creating one")
 			now := time.Now()
 			start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
@@ -117,7 +106,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			return Failed
 		}
 
-		round, holes, err := p.NewRoundFromString(ctx, message, guildID, playerID, tournament.ID)
+		round, holes, err := p.NewRoundFromString(message, guildID, playerID, tournament.ID)
 
 		if err != nil {
 			slog.Error("Failed to parse round", "round", round, "error", err)
@@ -137,7 +126,6 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			return ParsedButNotInserted
 		}
 
-		span.AddEvent("inserting-round")
 		tx, err := p.db.Begin()
 		if err != nil {
 			slog.Error("Failed to begin transaction", "error", err)
@@ -183,14 +171,12 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			slog.Error("Failed to commit transaction", "error", err)
 			return ParsedButNotInserted
 		}
-		span.AddEvent("inserted-round")
 
 		// Add missing rounds
 		msg := messages.RoundCreated{
 			GuildID:      guildID,
 			TournamentID: tournament.ID,
 			PlayerID:     playerID,
-			Context:      ctx,
 		}
 		bytes, err := msg.AsBytes()
 		if err != nil {
@@ -201,7 +187,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 
 		// clear cache
 		cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
-		p.cache.DeleteKey(ctx, cacheKey)
+		p.cache.DeleteKey(cacheKey)
 
 		if firstRound {
 			return FirstRound
@@ -214,10 +200,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 }
 
 // NewRoundFromString returns a new Round from a string
-func (p *Parser) NewRoundFromString(ctx context.Context, message string, guildID int64, playerID int64, tournamentID int32) (*database.Round, []*database.Hole, error) {
-	_, span := p.tracer.Start(ctx, "new-round-from-string")
-	defer span.End()
-
+func (p *Parser) NewRoundFromString(message string, guildID int64, playerID int64, tournamentID int32) (*database.Round, []*database.Hole, error) {
 	lines := strings.Split(message, "\n")
 	dateLine := lines[0]
 	totalStrokeLine := lines[1]

@@ -1,7 +1,6 @@
 package game
 
 import (
-	"context"
 	"database/sql"
 	"log/slog"
 	"math"
@@ -11,7 +10,6 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/leaderboard"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/messages"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 const defaultStrokes = 20
@@ -22,25 +20,16 @@ func (g *Game) ConfigureSubscribers() {
 }
 
 func (g *Game) ProcessAddMissingRounds(msg *nats.Msg) {
-	// ctx, span := g.tracer.Start(g.ctx, "process-missing-rounds")
-	// defer span.End()
-
 	slog.Info("Processing add missing rounds message")
 	roundCreated, err := messages.NewRoundCreatedFromJson(msg.Data)
 	if err != nil {
 		slog.Error("Failed to parse round created message", "error", err)
 	}
 
-	ctx, span := g.tracer.Start(roundCreated.Context, "process-missing-rounds")
-	defer span.End()
-
-	g.AddMissingRoundsForGuild(ctx, roundCreated.GuildID)
+	g.AddMissingRoundsForGuild(roundCreated.GuildID)
 }
 
 func (g *Game) AddMissingRounds() {
-	ctx, span := g.tracer.Start(g.ctx, "add-missing-rounds")
-	defer span.End()
-
 	slog.Info("Adding missing rounds for all guilds")
 
 	guildIDs, err := g.query.GetAllGuilds(g.ctx)
@@ -49,18 +38,13 @@ func (g *Game) AddMissingRounds() {
 	}
 
 	for _, guildID := range guildIDs {
-		g.AddMissingRoundsForGuild(ctx, guildID)
+		g.AddMissingRoundsForGuild(guildID)
 	}
 
 	slog.Info("Finished adding missing rounds for all guilds")
 }
 
-func (g *Game) AddMissingRoundsForGuild(ctx context.Context, guildID int64) {
-	ctx, span := g.tracer.Start(ctx, "add-missing-rounds-for-guild")
-	defer span.End()
-
-	span.SetAttributes(attribute.Int64("guild.id", guildID))
-
+func (g *Game) AddMissingRoundsForGuild(guildID int64) {
 	slog.Info("Adding missing rounds for guild", "guild", guildID)
 
 	var tournaments []database.Tournament
@@ -77,7 +61,7 @@ func (g *Game) AddMissingRoundsForGuild(ctx context.Context, guildID int64) {
 
 	// clear cache
 	cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
-	g.cache.DeleteKey(ctx, cacheKey)
+	g.cache.DeleteKey(cacheKey)
 
 	tournaments = append(tournaments, tournament)
 
@@ -144,22 +128,16 @@ func (g *Game) AddMissingRoundsForGuild(ctx context.Context, guildID int64) {
 }
 
 func (g *Game) ProcessAddTournamentWinners(msg *nats.Msg) {
-	ctx, span := g.tracer.Start(g.ctx, "process-tournament-winners")
-	defer span.End()
-
 	slog.Info("Processing add tournament winners message")
 	roundCreated, err := messages.NewTournamentCreatedFromJson(msg.Data)
 	if err != nil {
 		slog.Error("Failed to parse tournament created message", "error", err)
 	}
 
-	g.AddTournamentWinnersForGuild(ctx, roundCreated.GuildID)
+	g.AddTournamentWinnersForGuild(roundCreated.GuildID)
 }
 
 func (g *Game) AddTournamentWinners() {
-	ctx, span := g.tracer.Start(g.ctx, "add-tournament-winners")
-	defer span.End()
-
 	slog.Info("Adding tournament winners for all guilds")
 	guilds, err := g.query.GetAllGuilds(g.ctx)
 	if err != nil {
@@ -167,18 +145,13 @@ func (g *Game) AddTournamentWinners() {
 	}
 
 	for _, guild := range guilds {
-		g.AddMissingRoundsForGuild(ctx, guild)
+		g.AddMissingRoundsForGuild(guild)
 	}
 
 	slog.Info("Finished adding tournament winners for all guilds")
 }
 
-func (g *Game) AddTournamentWinnersForGuild(ctx context.Context, guildID int64) {
-	ctx, span := g.tracer.Start(ctx, "add-tournament-winners-for-guild")
-	defer span.End()
-
-	span.SetAttributes(attribute.Int64("guild.id", guildID))
-
+func (g *Game) AddTournamentWinnersForGuild(guildID int64) {
 	slog.Info("Adding tournament winners for guild", "guild", guildID)
 
 	var inactiveTournaments []database.Tournament
@@ -192,7 +165,7 @@ func (g *Game) AddTournamentWinnersForGuild(ctx context.Context, guildID int64) 
 	}
 	if len(tournaments) > 0 {
 		cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
-		g.cache.DeleteKey(ctx, cacheKey)
+		g.cache.DeleteKey(cacheKey)
 		inactiveTournaments = append(inactiveTournaments, tournaments...)
 	}
 

@@ -12,7 +12,6 @@ import (
 
 	"github.com/ryansheppard/morningjuegos/internal/cache"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -31,18 +30,16 @@ var (
 )
 
 type Leaderboard struct {
-	ctx    context.Context
-	query  *database.Queries
-	cache  *cache.Cache
-	tracer trace.Tracer
+	ctx   context.Context
+	query *database.Queries
+	cache *cache.Cache
 }
 
-func New(ctx context.Context, query *database.Queries, cache *cache.Cache, tracer trace.Tracer) *Leaderboard {
+func New(ctx context.Context, query *database.Queries, cache *cache.Cache) *Leaderboard {
 	return &Leaderboard{
-		ctx:    ctx,
-		query:  query,
-		cache:  cache,
-		tracer: tracer,
+		ctx:   ctx,
+		query: query,
+		cache: cache,
 	}
 }
 
@@ -55,10 +52,7 @@ func (p *GenerateLeaderboardParams) SetDate(date string) {
 	p.Date = date
 }
 
-func (l *Leaderboard) GenerateLeaderboard(ctx context.Context, params GenerateLeaderboardParams) string {
-	ctx, span := l.tracer.Start(ctx, "generate-leaderboard")
-	defer span.End()
-
+func (l *Leaderboard) GenerateLeaderboard(params GenerateLeaderboardParams) string {
 	// todo: find better way to do this
 	startTime := time.Now().Add(11 * -24 * time.Hour)
 	endTime := time.Now().Add(24 * time.Hour)
@@ -94,7 +88,6 @@ func (l *Leaderboard) GenerateLeaderboard(ctx context.Context, params GenerateLe
 		tournamentTime = startTime
 	}
 
-	span.AddEvent("get-active-tournament")
 	tournament, err := l.query.GetActiveTournament(l.ctx, database.GetActiveTournamentParams{
 		GuildID:   guildID,
 		StartTime: tournamentTime,
@@ -110,7 +103,7 @@ func (l *Leaderboard) GenerateLeaderboard(ctx context.Context, params GenerateLe
 	cacheKey := ""
 	if includeEmoji {
 		cacheKey = GetLeaderboardCacheKey(guildID)
-		cached, err = l.cache.GetKey(ctx, cacheKey)
+		cached, err = l.cache.GetKey(cacheKey)
 		if err != nil {
 			slog.Error("Failed to get leaderboard from cache", "guild", guildID, "error", err)
 		}
@@ -126,7 +119,7 @@ func (l *Leaderboard) GenerateLeaderboard(ctx context.Context, params GenerateLe
 	if params.Date != "" {
 		header = "Leaderboard for " + params.Date
 	} else {
-		header = l.generateHeader(ctx, &tournament)
+		header = l.generateHeader(&tournament)
 	}
 
 	leaderParams := generateLeaderStringParams{
@@ -137,21 +130,18 @@ func (l *Leaderboard) GenerateLeaderboard(ctx context.Context, params GenerateLe
 		EndTime:      endTime,
 		IncludeEmoji: includeEmoji,
 	}
-	leaderString := l.generateLeaderString(ctx, leaderParams)
+	leaderString := l.generateLeaderString(leaderParams)
 
 	all := header + "\n\n" + leaderString
 
 	if includeEmoji {
-		l.cache.SetKey(ctx, cacheKey, all, 3600)
+		l.cache.SetKey(cacheKey, all, 3600)
 	}
 
 	return all
 }
 
-func (l *Leaderboard) GenerateStats(ctx context.Context, guildIDString string) string {
-	ctx, span := l.tracer.Start(ctx, "generate-stats")
-	defer span.End()
-
+func (l *Leaderboard) GenerateStats(guildIDString string) string {
 	guildID, err := strconv.ParseInt(guildIDString, 10, 64)
 	if err != nil {
 		slog.Error("Failed to parse guildID", "guild", guildIDString, "error", err)
@@ -173,7 +163,7 @@ func (l *Leaderboard) GenerateStats(ctx context.Context, guildIDString string) s
 
 	cacheKey := GetStatsCacheKey(guildID)
 	var cached interface{}
-	cached, err = l.cache.GetKey(ctx, cacheKey)
+	cached, err = l.cache.GetKey(cacheKey)
 	if err != nil {
 		slog.Error("Failed to get stats from cache", "guild", guildID, "error", err)
 	}
@@ -184,21 +174,18 @@ func (l *Leaderboard) GenerateStats(ctx context.Context, guildIDString string) s
 		return cached.(string)
 	}
 
-	header := l.generateHeader(ctx, &tournament)
+	header := l.generateHeader(&tournament)
 
-	statsStr := l.generateStats(ctx, tournament.ID)
+	statsStr := l.generateStats(tournament.ID)
 
 	all := header + "\n\n" + statsStr
 
-	l.cache.SetKey(ctx, cacheKey, all, 3600)
+	l.cache.SetKey(cacheKey, all, 3600)
 
 	return all
 }
 
-func (l *Leaderboard) generateHeader(ctx context.Context, tournament *database.Tournament) string {
-	_, span := l.tracer.Start(ctx, "generate-header")
-	defer span.End()
-
+func (l *Leaderboard) generateHeader(tournament *database.Tournament) string {
 	startDate := tournament.StartTime.Format("Jan 2, 2006")
 	endDate := tournament.EndTime.Format("Jan 2, 2006")
 
@@ -215,10 +202,7 @@ type generateLeaderStringParams struct {
 	IncludeEmoji bool
 }
 
-func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateLeaderStringParams) string {
-	ctx, span := l.tracer.Start(ctx, "generate-leader-string")
-	defer span.End()
-
+func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) string {
 	slog.Info("Generating leaderboard string", "guild", params.GuildID, "tournament", params)
 	strokeLeaders, err := l.query.GetLeaders(l.ctx, database.GetLeadersParams{
 		TournamentID: params.TournamentID,
@@ -252,7 +236,7 @@ func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateL
 
 		placementString := ""
 		if params.IncludeEmoji {
-			placementString = l.getPlacementEmoji(ctx, i+1)
+			placementString = l.getPlacementEmoji(i + 1)
 		}
 
 		prev := -1
@@ -270,12 +254,12 @@ func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateL
 
 		movement := "❌"
 		if hasPlayed {
-			movement = l.getPreviousPlacementEmoji(ctx, prev, i+1)
+			movement = l.getPreviousPlacementEmoji(prev, i+1)
 		}
 
 		previousWinString := ""
 		if params.IncludeEmoji {
-			previousWinString = l.getCrowns(ctx, params.GuildID, leader.PlayerID)
+			previousWinString = l.getCrowns(params.GuildID, leader.PlayerID)
 		}
 
 		if hasPlayed {
@@ -309,10 +293,7 @@ func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateL
 }
 
 // todo replace with a single query instead of per player
-func (l *Leaderboard) getCrowns(ctx context.Context, guildID int64, playerID int64) string {
-	_, span := l.tracer.Start(ctx, "get-crowns")
-	defer span.End()
-
+func (l *Leaderboard) getCrowns(guildID int64, playerID int64) string {
 	previousWins, err := l.query.GetTournamentPlacementsByPosition(l.ctx, database.GetTournamentPlacementsByPositionParams{
 		GuildID:             guildID,
 		PlayerID:            playerID,
@@ -330,10 +311,7 @@ func (l *Leaderboard) getCrowns(ctx context.Context, guildID int64, playerID int
 	return ""
 }
 
-func (l *Leaderboard) getPlacementEmoji(ctx context.Context, placement int) string {
-	_, span := l.tracer.Start(ctx, "get-placement-emoji")
-	defer span.End()
-
+func (l *Leaderboard) getPlacementEmoji(placement int) string {
 	if placement, ok := placements[placement]; ok {
 		return placement
 	}
@@ -341,10 +319,7 @@ func (l *Leaderboard) getPlacementEmoji(ctx context.Context, placement int) stri
 	return ""
 }
 
-func (l *Leaderboard) getPreviousPlacementEmoji(ctx context.Context, prev int, current int) string {
-	_, span := l.tracer.Start(ctx, "get-previous-placement-emoji")
-	defer span.End()
-
+func (l *Leaderboard) getPreviousPlacementEmoji(prev int, current int) string {
 	if prev != -1 {
 		if prev > current {
 			return "⬆️"
@@ -376,18 +351,15 @@ func (l *Leaderboard) getPreviousPlacements(guildID int64, tournamentID int32) m
 }
 
 // TODO: this should not have a newline for empty results
-func (l *Leaderboard) generateStats(ctx context.Context, tournamentID int32) string {
-	ctx, span := l.tracer.Start(ctx, "generate-stats")
-	defer span.End()
-
-	holeInOneString := l.getHoleInOneLeader(ctx, tournamentID)
-	bestRoundString := l.getBestRounds(ctx, tournamentID)
-	worstRoundString := l.getWorstRounds(ctx, tournamentID)
-	mostCommon := l.getFirstMostCommonHole(ctx, tournamentID)
-	lastCommon := l.getLastMostCommonHole(ctx, tournamentID)
-	hardestHole := l.getHardestHole(ctx, tournamentID)
-	bestPerformers := l.getBestPerformers(ctx)
-	worstPerformers := l.getWorstPerformers(ctx)
+func (l *Leaderboard) generateStats(tournamentID int32) string {
+	holeInOneString := l.getHoleInOneLeader(tournamentID)
+	bestRoundString := l.getBestRounds(tournamentID)
+	worstRoundString := l.getWorstRounds(tournamentID)
+	mostCommon := l.getFirstMostCommonHole(tournamentID)
+	lastCommon := l.getLastMostCommonHole(tournamentID)
+	hardestHole := l.getHardestHole(tournamentID)
+	bestPerformers := l.getBestPerformers()
+	worstPerformers := l.getWorstPerformers()
 
 	statsHeader := "Stats powered by AWS Next Gen Stats"
 	statsStr := strings.Join([]string{
@@ -405,10 +377,7 @@ func (l *Leaderboard) generateStats(ctx context.Context, tournamentID int32) str
 	return statsStr
 }
 
-func (l *Leaderboard) getHoleInOneLeader(ctx context.Context, tournamentID int32) string {
-	_, span := l.tracer.Start(ctx, "get-hole-in-one-leader")
-	defer span.End()
-
+func (l *Leaderboard) getHoleInOneLeader(tournamentID int32) string {
 	holeInOneLeaders, err := l.query.GetHoleInOneLeaders(l.ctx, tournamentID)
 	if err == sql.ErrNoRows {
 		slog.Warn("No hole in one leaders", "tournament", tournamentID)
@@ -444,10 +413,7 @@ func (l *Leaderboard) getHoleInOneLeader(ctx context.Context, tournamentID int32
 }
 
 // TOOD: dedupe these two methods
-func (l *Leaderboard) getBestRounds(ctx context.Context, tournamentID int32) string {
-	_, span := l.tracer.Start(ctx, "get-best-rounds")
-	defer span.End()
-
+func (l *Leaderboard) getBestRounds(tournamentID int32) string {
 	rounds, err := l.query.GetBestRounds(l.ctx, tournamentID)
 	if err == sql.ErrNoRows {
 		slog.Warn("No best rounds", "tournament", tournamentID)
@@ -481,10 +447,7 @@ func (l *Leaderboard) getBestRounds(ctx context.Context, tournamentID int32) str
 	return fmt.Sprintf("Best round%s of the tournament: %s, %d strokes 🙇", plural, bestMentions, strokes)
 }
 
-func (l *Leaderboard) getWorstRounds(ctx context.Context, tournamentID int32) string {
-	_, span := l.tracer.Start(ctx, "get-worst-rounds")
-	defer span.End()
-
+func (l *Leaderboard) getWorstRounds(tournamentID int32) string {
 	rounds, err := l.query.GetWorstRounds(l.ctx, tournamentID)
 	if err == sql.ErrNoRows {
 		slog.Warn("No best rounds", "tournament", tournamentID)
@@ -518,10 +481,7 @@ func (l *Leaderboard) getWorstRounds(ctx context.Context, tournamentID int32) st
 	return fmt.Sprintf("Worst round%s of the tournament: %s, %d strokes 🤡%s", plural, worstMentions, strokes, plural)
 }
 
-func (l *Leaderboard) getFirstMostCommonHole(ctx context.Context, tournamentID int32) string {
-	_, span := l.tracer.Start(ctx, "get-most-common-hole")
-	defer span.End()
-
+func (l *Leaderboard) getFirstMostCommonHole(tournamentID int32) string {
 	firstMost, _ := l.query.GetMostCommonHoleForNumber(l.ctx, database.GetMostCommonHoleForNumberParams{
 		TournamentID: tournamentID,
 		HoleNumber:   0,
@@ -530,10 +490,7 @@ func (l *Leaderboard) getFirstMostCommonHole(ctx context.Context, tournamentID i
 
 }
 
-func (l *Leaderboard) getLastMostCommonHole(ctx context.Context, tournamentID int32) string {
-	_, span := l.tracer.Start(ctx, "get-least-common-hole")
-	defer span.End()
-
+func (l *Leaderboard) getLastMostCommonHole(tournamentID int32) string {
 	lastMost, _ := l.query.GetMostCommonHoleForNumber(l.ctx, database.GetMostCommonHoleForNumberParams{
 		TournamentID: tournamentID,
 		HoleNumber:   4,
@@ -542,10 +499,7 @@ func (l *Leaderboard) getLastMostCommonHole(ctx context.Context, tournamentID in
 
 }
 
-func (l *Leaderboard) getHardestHole(ctx context.Context, tournamentID int32) string {
-	_, span := l.tracer.Start(ctx, "get-hardest-hole")
-	defer span.End()
-
+func (l *Leaderboard) getHardestHole(tournamentID int32) string {
 	hole, err := l.query.GetHardestHole(l.ctx, tournamentID)
 	if err != nil {
 		slog.Error("Failed to get hardest hole", "tournament", tournamentID, "error", err)
@@ -553,10 +507,7 @@ func (l *Leaderboard) getHardestHole(ctx context.Context, tournamentID int32) st
 	return fmt.Sprintf("Hardest hole: %s with an average of %0.2f strokes", colors[hole.Color], hole.Strokes)
 }
 
-func (l *Leaderboard) getPerformers(ctx context.Context, reverse bool) ([]string, string, error) {
-	_, span := l.tracer.Start(ctx, "get-performers")
-	defer span.End()
-
+func (l *Leaderboard) getPerformers(reverse bool) ([]string, string, error) {
 	performers, err := l.query.GetStandardDeviation(l.ctx)
 	if err == sql.ErrNoRows {
 		slog.Info("No std dev found")
@@ -586,12 +537,10 @@ func (l *Leaderboard) getPerformers(ctx context.Context, reverse bool) ([]string
 	return performerIDs, stdDev, nil
 }
 
-func (l *Leaderboard) getWorstPerformers(ctx context.Context) string {
-	ctx, span := l.tracer.Start(ctx, "get-worst-performers")
-	defer span.End()
+func (l *Leaderboard) getWorstPerformers() string {
 	worstPerformerString := ""
 
-	worstPerformerIDs, stdDev, err := l.getPerformers(ctx, true)
+	worstPerformerIDs, stdDev, err := l.getPerformers(true)
 	if err != nil {
 		return worstPerformerString
 	}
@@ -601,13 +550,10 @@ func (l *Leaderboard) getWorstPerformers(ctx context.Context) string {
 	return fmt.Sprintf("[All Time] Least consistent players: %v with a standard deviation of %s strokes", worstPerformerMentions, stdDev)
 }
 
-func (l *Leaderboard) getBestPerformers(ctx context.Context) string {
-	ctx, span := l.tracer.Start(ctx, "get-best-performers")
-	defer span.End()
-
+func (l *Leaderboard) getBestPerformers() string {
 	bestPerformersString := ""
 
-	bestPerformerIDs, stdDev, err := l.getPerformers(ctx, false)
+	bestPerformerIDs, stdDev, err := l.getPerformers(false)
 	if err != nil {
 		return bestPerformersString
 	}
