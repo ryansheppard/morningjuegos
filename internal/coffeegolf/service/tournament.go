@@ -201,10 +201,10 @@ func (s *Service) GetTournamentPlacementsByPosition(ctx context.Context, guildID
 	previousWins, err := s.queries.GetTournamentPlacementsByPosition(ctx, database.GetTournamentPlacementsByPositionParams{
 		GuildID:             guildID,
 		PlayerID:            playerID,
-		TournamentPlacement: 1,
+		TournamentPlacement: tournamentPlacement,
 	})
 	if err != nil && err != sql.ErrNoRows {
-		slog.Error("Failed to get previous wins", "guild", guildID, "player", playerID, "error", err)
+		slog.Error("Failed to get previous placements", "guild", guildID, "player", playerID, "error", err)
 		return 0, err
 	}
 
