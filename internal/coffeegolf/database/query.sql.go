@@ -101,7 +101,7 @@ func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round
 }
 
 const createTournament = `-- name: CreateTournament :one
-INSERT INTO tournament (guild_id, start_time, end_time, inserted_by) VALUES ($1, $2, $3, $4) RETURNING id, guild_id, start_time, end_time, inserted_at, inserted_by
+INSERT INTO tournament (guild_id, start_time, end_time, inserted_by) VALUES ($1, $2, $3, $4) RETURNING id, guild_id, start_time, end_time, inserted_by
 `
 
 type CreateTournamentParams struct {
@@ -111,20 +111,27 @@ type CreateTournamentParams struct {
 	InsertedBy string
 }
 
-func (q *Queries) CreateTournament(ctx context.Context, arg CreateTournamentParams) (Tournament, error) {
+type CreateTournamentRow struct {
+	ID         int32
+	GuildID    int64
+	StartTime  time.Time
+	EndTime    time.Time
+	InsertedBy string
+}
+
+func (q *Queries) CreateTournament(ctx context.Context, arg CreateTournamentParams) (CreateTournamentRow, error) {
 	row := q.db.QueryRowContext(ctx, createTournament,
 		arg.GuildID,
 		arg.StartTime,
 		arg.EndTime,
 		arg.InsertedBy,
 	)
-	var i Tournament
+	var i CreateTournamentRow
 	err := row.Scan(
 		&i.ID,
 		&i.GuildID,
 		&i.StartTime,
 		&i.EndTime,
-		&i.InsertedAt,
 		&i.InsertedBy,
 	)
 	return i, err
@@ -165,25 +172,27 @@ func (q *Queries) CreateTournamentPlacement(ctx context.Context, arg CreateTourn
 
 const getActiveTournament = `-- name: GetActiveTournament :one
 
-SELECT id, guild_id, start_time, end_time, inserted_at, inserted_by FROM tournament WHERE guild_id = $1 AND start_time <= $2 AND end_time >= $2
+SELECT id, guild_id, start_time, end_time, inserted_by FROM tournament WHERE guild_id = $1 AND start_time <= NOW() AND end_time >= NOW()
 `
 
-type GetActiveTournamentParams struct {
-	GuildID   int64
-	StartTime time.Time
+type GetActiveTournamentRow struct {
+	ID         int32
+	GuildID    int64
+	StartTime  time.Time
+	EndTime    time.Time
+	InsertedBy string
 }
 
 // Player Queries
 // Tournament Queries
-func (q *Queries) GetActiveTournament(ctx context.Context, arg GetActiveTournamentParams) (Tournament, error) {
-	row := q.db.QueryRowContext(ctx, getActiveTournament, arg.GuildID, arg.StartTime)
-	var i Tournament
+func (q *Queries) GetActiveTournament(ctx context.Context, guildID int64) (GetActiveTournamentRow, error) {
+	row := q.db.QueryRowContext(ctx, getActiveTournament, guildID)
+	var i GetActiveTournamentRow
 	err := row.Scan(
 		&i.ID,
 		&i.GuildID,
 		&i.StartTime,
 		&i.EndTime,
-		&i.InsertedAt,
 		&i.InsertedBy,
 	)
 	return i, err
@@ -356,7 +365,7 @@ func (q *Queries) GetHoleInOneLeaders(ctx context.Context, tournamentID int32) (
 }
 
 const getInactiveTournaments = `-- name: GetInactiveTournaments :many
-SELECT id, guild_id, start_time, end_time, inserted_at, inserted_by FROM tournament WHERE guild_id = $1 AND end_time < $2
+SELECT id, guild_id, start_time, end_time, inserted_by FROM tournament WHERE guild_id = $1 AND end_time < $2
 `
 
 type GetInactiveTournamentsParams struct {
@@ -364,21 +373,28 @@ type GetInactiveTournamentsParams struct {
 	EndTime time.Time
 }
 
-func (q *Queries) GetInactiveTournaments(ctx context.Context, arg GetInactiveTournamentsParams) ([]Tournament, error) {
+type GetInactiveTournamentsRow struct {
+	ID         int32
+	GuildID    int64
+	StartTime  time.Time
+	EndTime    time.Time
+	InsertedBy string
+}
+
+func (q *Queries) GetInactiveTournaments(ctx context.Context, arg GetInactiveTournamentsParams) ([]GetInactiveTournamentsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getInactiveTournaments, arg.GuildID, arg.EndTime)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Tournament
+	var items []GetInactiveTournamentsRow
 	for rows.Next() {
-		var i Tournament
+		var i GetInactiveTournamentsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.GuildID,
 			&i.StartTime,
 			&i.EndTime,
-			&i.InsertedAt,
 			&i.InsertedBy,
 		); err != nil {
 			return nil, err
@@ -547,6 +563,36 @@ func (q *Queries) GetStandardDeviation(ctx context.Context) ([]GetStandardDeviat
 		return nil, err
 	}
 	return items, nil
+}
+
+const getTournamentByForDate = `-- name: GetTournamentByForDate :one
+SELECT id, guild_id, start_time, end_time, inserted_by FROM tournament WHERE guild_id = $1 AND start_time <= $2 AND end_time >= $2
+`
+
+type GetTournamentByForDateParams struct {
+	GuildID   int64
+	StartTime time.Time
+}
+
+type GetTournamentByForDateRow struct {
+	ID         int32
+	GuildID    int64
+	StartTime  time.Time
+	EndTime    time.Time
+	InsertedBy string
+}
+
+func (q *Queries) GetTournamentByForDate(ctx context.Context, arg GetTournamentByForDateParams) (GetTournamentByForDateRow, error) {
+	row := q.db.QueryRowContext(ctx, getTournamentByForDate, arg.GuildID, arg.StartTime)
+	var i GetTournamentByForDateRow
+	err := row.Scan(
+		&i.ID,
+		&i.GuildID,
+		&i.StartTime,
+		&i.EndTime,
+		&i.InsertedBy,
+	)
+	return i, err
 }
 
 const getTournamentPlacements = `-- name: GetTournamentPlacements :many

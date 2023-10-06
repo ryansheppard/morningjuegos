@@ -14,6 +14,7 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/leaderboard"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/messages"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/service"
 	"github.com/ryansheppard/morningjuegos/internal/messenger"
 )
 
@@ -25,21 +26,17 @@ const (
 	NotCoffeeGolf        = 4
 )
 
-const defaultTouramentLength = 10
-
 type Parser struct {
 	ctx       context.Context
-	queries   *database.Queries
-	db        *sql.DB
+	service   *service.Service
 	cache     *cache.Cache
 	messenger *messenger.Messenger
 }
 
-func New(ctx context.Context, queries *database.Queries, db *sql.DB, cache *cache.Cache, messenger *messenger.Messenger) *Parser {
+func New(ctx context.Context, service *service.Service, cache *cache.Cache, messenger *messenger.Messenger) *Parser {
 	return &Parser{
 		ctx:       ctx,
-		queries:   queries,
-		db:        db,
+		service:   service,
 		cache:     cache,
 		messenger: messenger,
 	}
@@ -68,28 +65,13 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			return Failed
 		}
 
-		tournament, err := p.queries.GetActiveTournament(p.ctx, database.GetActiveTournamentParams{
-			GuildID:   guildID,
-			StartTime: time.Now(),
-		})
-		if err == sql.ErrNoRows {
-			slog.Info("No active tournament found, creating one")
-			now := time.Now()
-			start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-			end := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
-			endDate := end.AddDate(0, 0, defaultTouramentLength)
+		tournament, created, err := p.service.GetOrCreateTournament(p.ctx, guildID, "parser")
+		if err != nil {
+			slog.Error("Failed to get or create tournament", "guild", guildID, "error", err)
+			return Failed
+		}
 
-			tournament, err = p.queries.CreateTournament(p.ctx, database.CreateTournamentParams{
-				GuildID:    guildID,
-				StartTime:  start,
-				EndTime:    endDate,
-				InsertedBy: "parser",
-			})
-			if err != nil {
-				slog.Error("Failed to create tournament", "guild", guildID, "error", err)
-				return Failed
-			}
-
+		if created {
 			msg := messages.TournamentCreated{
 				GuildID: guildID,
 			}
@@ -99,11 +81,6 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			} else {
 				p.messenger.Publish(messages.TournamentCreatedKey, bytes)
 			}
-
-			slog.Info("Created tournament", "tournament", tournament)
-		} else if err != nil {
-			slog.Error("Failed to get active tournament", "guild", guildID, "error", err)
-			return Failed
 		}
 
 		round, holes, err := p.NewRoundFromString(message, guildID, playerID, tournament.ID)
@@ -113,76 +90,27 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			return Failed
 		}
 
-		_, err = p.queries.HasPlayedToday(p.ctx, database.HasPlayedTodayParams{
-			PlayerID:     playerID,
-			TournamentID: tournament.ID,
-		})
-
-		firstRound := false
-		if err == sql.ErrNoRows {
-			firstRound = true
-		} else if err != nil {
-			slog.Error("Failed to check if player has played today", "player", playerID, "tournament", tournament.ID, "error", err)
-			return ParsedButNotInserted
-		}
-
-		tx, err := p.db.Begin()
-		if err != nil {
-			slog.Error("Failed to begin transaction", "error", err)
-			return ParsedButNotInserted
-		}
-		defer tx.Rollback()
-
-		qtx := p.queries.WithTx(tx)
-
-		insertedRound, err := qtx.CreateRound(p.ctx, database.CreateRoundParams{
-			TournamentID: round.TournamentID,
-			PlayerID:     round.PlayerID,
-			OriginalDate: round.OriginalDate,
-			TotalStrokes: round.TotalStrokes,
-			Percentage:   round.Percentage,
-			FirstRound:   firstRound,
-			InsertedBy:   "parser",
-			RoundDate:    round.RoundDate,
-		})
-
+		roundCreated, err := p.service.InsertRound(p.ctx, round, holes)
 		if err != nil {
 			slog.Error("Failed to insert round", "round", round, "error", err)
 			return ParsedButNotInserted
 		}
 
-		for _, hole := range holes {
-			hole.RoundID = insertedRound.ID
-			_, err = qtx.CreateHole(p.ctx, database.CreateHoleParams{
-				RoundID:    hole.RoundID,
-				Color:      hole.Color,
-				Strokes:    hole.Strokes,
-				HoleNumber: hole.HoleNumber,
-				InsertedBy: "parser",
-			})
-			if err != nil {
-				slog.Error("Failed to insert hole", "hole", hole, "error", err)
-				return ParsedButNotInserted
-			}
-		}
-
-		err = tx.Commit()
-		if err != nil {
-			slog.Error("Failed to commit transaction", "error", err)
-			return ParsedButNotInserted
-		}
+		firstRound := round.FirstRound
 
 		// Add missing rounds
-		msg := messages.RoundCreated{
-			GuildID:      guildID,
-			TournamentID: tournament.ID,
-			PlayerID:     playerID,
-		}
-		bytes, err := msg.AsBytes()
-		if err != nil {
-			slog.Error("Failed to marshal message", "message", msg, "error", err)
-		} else {
-			p.messenger.Publish(messages.RoundCreatedKey, bytes)
+		if roundCreated && firstRound {
+			msg := messages.RoundCreated{
+				GuildID:      guildID,
+				TournamentID: tournament.ID,
+				PlayerID:     playerID,
+			}
+			bytes, err := msg.AsBytes()
+			if err != nil {
+				slog.Error("Failed to marshal message", "message", msg, "error", err)
+			} else {
+				p.messenger.Publish(messages.RoundCreatedKey, bytes)
+			}
 		}
 
 		// clear cache
@@ -219,6 +147,16 @@ func (p *Parser) NewRoundFromString(message string, guildID int64, playerID int6
 	percentLine := parsePercentLine(totalStrokeLine)
 	holes := parseStrokeLines(holeLine, strokesLine)
 
+	firstRound, err := p.service.HasPlayed(p.ctx, playerID, tournamentID, dateTime.Time)
+	if err != nil {
+		slog.Error("Failed to check if player has played today", "player", playerID, "tournament", tournamentID, "error", err)
+		return nil, nil, err
+	} else {
+		slog.Info("Has played", "player", playerID, "tournament", tournamentID, "firstRound", firstRound)
+	}
+
+	slog.Info("date", "time", dateTime.Time)
+
 	return &database.Round{
 		TournamentID: tournamentID,
 		PlayerID:     playerID,
@@ -227,6 +165,8 @@ func (p *Parser) NewRoundFromString(message string, guildID int64, playerID int6
 		TotalStrokes: int32(totalStrokes),
 		Percentage:   percentLine,
 		RoundDate:    dateTime,
+		FirstRound:   firstRound,
+		InsertedBy:   "parser",
 	}, holes, nil
 }
 
@@ -277,6 +217,7 @@ func parseStrokeLines(holeLine string, strokesLine string) []*database.Hole {
 			Strokes:    int32(stroke),
 			HoleNumber: int32(i),
 			InsertedAt: time.Now(),
+			InsertedBy: "parser",
 		}
 		holes = append(holes, hole)
 	}

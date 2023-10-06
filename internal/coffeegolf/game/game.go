@@ -6,15 +6,15 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/ryansheppard/morningjuegos/internal/cache"
-	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/leaderboard"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/parser"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/service"
 	"github.com/ryansheppard/morningjuegos/internal/messenger"
 )
 
 type Game struct {
 	ctx         context.Context
-	query       *database.Queries
+	service     *service.Service
 	cache       *cache.Cache
 	Parser      *parser.Parser
 	leaderboard *leaderboard.Leaderboard
@@ -22,12 +22,12 @@ type Game struct {
 }
 
 // Todo replace with withoptions
-func New(ctx context.Context, query *database.Queries, cache *cache.Cache, db *sql.DB, messenger *messenger.Messenger) *Game {
-	parser := parser.New(ctx, query, db, cache, messenger)
-	leaderboard := leaderboard.New(ctx, query, cache)
+func New(ctx context.Context, service *service.Service, cache *cache.Cache, db *sql.DB, messenger *messenger.Messenger) *Game {
+	parser := parser.New(ctx, service, cache, messenger)
+	leaderboard := leaderboard.New(ctx, service, cache)
 	return &Game{
 		ctx:         ctx,
-		query:       query,
+		service:     service,
 		cache:       cache,
 		Parser:      parser,
 		leaderboard: leaderboard,
@@ -36,24 +36,10 @@ func New(ctx context.Context, query *database.Queries, cache *cache.Cache, db *s
 }
 
 func (g *Game) LeaderboardCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	params := leaderboard.GenerateLeaderboardParams{
-		GuildID: i.GuildID,
-	}
-
-	options := i.ApplicationCommandData().Options
-	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
-	for _, opt := range options {
-		optionMap[opt.Name] = opt
-	}
-
-	if option, ok := optionMap["date-option"]; ok {
-		params.SetDate(option.StringValue())
-	}
-
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: g.leaderboard.GenerateLeaderboard(params),
+			Content: g.leaderboard.GenerateLeaderboard(i.GuildID),
 		},
 	})
 }
@@ -70,7 +56,6 @@ func (g *Game) StatsCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func (g *Game) HelpText() string {
 	return `
 Use /coffeegolf to the leaderboard for the current tournament
-Use /coffeegolf <date> to get the leaderboard for a specific date. Date format is YYYY-MM-DD
 Use /coffeestats to get the stats for the current tournament
 
 When posting a Coffee Golf message, the possible reactions are: 

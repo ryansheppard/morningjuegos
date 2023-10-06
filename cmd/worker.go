@@ -13,6 +13,7 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/cache"
 	cgQueries "github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	coffeegolf "github.com/ryansheppard/morningjuegos/internal/coffeegolf/game"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/service"
 	"github.com/ryansheppard/morningjuegos/internal/messenger"
 	"github.com/spf13/cobra"
 )
@@ -48,7 +49,9 @@ var workerCmd = &cobra.Command{
 
 		q := cgQueries.New(db)
 
-		cg := coffeegolf.New(ctx, q, c, db, m)
+		service := service.New(db, q)
+
+		cg := coffeegolf.New(ctx, service, c, db, m)
 		cg.ConfigureSubscribers()
 
 		slog.Info("MorningJuegos worker is now running. Press CTRL-C to exit.")

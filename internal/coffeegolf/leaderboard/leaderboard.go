@@ -12,6 +12,7 @@ import (
 
 	"github.com/ryansheppard/morningjuegos/internal/cache"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/service"
 )
 
 var (
@@ -30,68 +31,35 @@ var (
 )
 
 type Leaderboard struct {
-	ctx   context.Context
-	query *database.Queries
-	cache *cache.Cache
+	ctx     context.Context
+	service *service.Service
+	cache   *cache.Cache
 }
 
-func New(ctx context.Context, query *database.Queries, cache *cache.Cache) *Leaderboard {
+func New(ctx context.Context, service *service.Service, cache *cache.Cache) *Leaderboard {
 	return &Leaderboard{
-		ctx:   ctx,
-		query: query,
-		cache: cache,
+		ctx:     ctx,
+		service: service,
+		cache:   cache,
 	}
 }
 
-type GenerateLeaderboardParams struct {
-	GuildID string
-	Date    string
-}
-
-func (p *GenerateLeaderboardParams) SetDate(date string) {
-	p.Date = date
-}
-
-func (l *Leaderboard) GenerateLeaderboard(params GenerateLeaderboardParams) string {
+func (l *Leaderboard) GenerateLeaderboard(guildIDAsString string) string {
 	// todo: find better way to do this
 	startTime := time.Now().Add(11 * -24 * time.Hour)
 	endTime := time.Now().Add(24 * time.Hour)
 	// includeEmoji gets set false when parsing a date specific leaderboard, so it gets used in a lot of places
 	includeEmoji := true
-	if params.Date != "" {
-		newYork, err := time.LoadLocation("America/New_York")
-		if err != nil {
-			slog.Error("Failed to load location", "error", err)
-			return "Could not parse the given date, try using the format 2023-01-01 (yyyy-mm-dd)"
-		}
-		parsedTime, err := time.ParseInLocation("2006-01-02", params.Date, newYork)
-		if err != nil {
-			slog.Error("Failed to parse date", "date", params.Date, "error", err)
-			return "Could not parse the given date, try using the format 2023-01-01 (yyyy-mm-dd)"
-		}
 
-		startTime = parsedTime
-		endTime = parsedTime.Add(24 * time.Hour).Add(-1 * time.Second)
-		includeEmoji = false
-	}
-
-	guildID, err := strconv.ParseInt(params.GuildID, 10, 64)
+	guildID, err := strconv.ParseInt(guildIDAsString, 10, 64)
 	if err != nil {
-		slog.Error("Failed to parse guildID", "guild", params.GuildID, "error", err)
+		slog.Error("Failed to parse guildID", "guild", guildIDAsString, "error", err)
 		return "Could not generate a leaderboard for this discord server"
 	}
 
 	slog.Info("Generating leaderboard", "guild", guildID, "startTime", startTime, "endTime", endTime)
 
-	tournamentTime := time.Now()
-	if params.Date != "" {
-		tournamentTime = startTime
-	}
-
-	tournament, err := l.query.GetActiveTournament(l.ctx, database.GetActiveTournamentParams{
-		GuildID:   guildID,
-		StartTime: tournamentTime,
-	})
+	tournament, err := l.service.GetActiveTournament(l.ctx, guildID)
 	if err == sql.ErrNoRows {
 		return "Could not find a tournament for this discord server"
 	} else if err != nil {
@@ -115,12 +83,7 @@ func (l *Leaderboard) GenerateLeaderboard(params GenerateLeaderboardParams) stri
 		return cached.(string)
 	}
 
-	var header string
-	if params.Date != "" {
-		header = "Leaderboard for " + params.Date
-	} else {
-		header = l.generateHeader(&tournament)
-	}
+	header := l.generateHeader(tournament)
 
 	leaderParams := generateLeaderStringParams{
 		GuildID:      guildID,
@@ -150,10 +113,7 @@ func (l *Leaderboard) GenerateStats(guildIDString string) string {
 
 	slog.Info("Generating stats", "guild", guildID)
 
-	tournament, err := l.query.GetActiveTournament(l.ctx, database.GetActiveTournamentParams{
-		GuildID:   guildID,
-		StartTime: time.Now(),
-	})
+	tournament, err := l.service.GetActiveTournament(l.ctx, guildID)
 	if err == sql.ErrNoRows {
 		return "Could not find a tournament for this discord server"
 	} else if err != nil {
@@ -174,7 +134,7 @@ func (l *Leaderboard) GenerateStats(guildIDString string) string {
 		return cached.(string)
 	}
 
-	header := l.generateHeader(&tournament)
+	header := l.generateHeader(tournament)
 
 	statsStr := l.generateStats(tournament.ID)
 
@@ -204,11 +164,7 @@ type generateLeaderStringParams struct {
 
 func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) string {
 	slog.Info("Generating leaderboard string", "guild", params.GuildID, "tournament", params)
-	strokeLeaders, err := l.query.GetLeaders(l.ctx, database.GetLeadersParams{
-		TournamentID: params.TournamentID,
-		RoundDate:    sql.NullTime{Time: params.StartTime, Valid: true},
-		RoundDate_2:  sql.NullTime{Time: params.EndTime, Valid: true},
-	})
+	strokeLeaders, err := l.service.GetLeaders(l.ctx, params.TournamentID, params.StartTime, params.EndTime)
 
 	if err != nil {
 		slog.Error("Failed to get leaders", "guild", params.GuildID, "error", err)
@@ -229,10 +185,7 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 	notYetPlayed := []string{}
 	skipCounter := 0
 	for i, leader := range strokeLeaders {
-		_, err := l.query.HasPlayedToday(l.ctx, database.HasPlayedTodayParams{
-			PlayerID:     leader.PlayerID,
-			TournamentID: params.TournamentID,
-		})
+		_, err := l.service.HasPlayedToday(l.ctx, leader.PlayerID, params.TournamentID)
 
 		placementString := ""
 		if params.IncludeEmoji {
@@ -294,17 +247,13 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 
 // todo replace with a single query instead of per player
 func (l *Leaderboard) getCrowns(guildID int64, playerID int64) string {
-	previousWins, err := l.query.GetTournamentPlacementsByPosition(l.ctx, database.GetTournamentPlacementsByPositionParams{
-		GuildID:             guildID,
-		PlayerID:            playerID,
-		TournamentPlacement: 1,
-	})
-	if err != nil && err != sql.ErrNoRows {
+	previousWins, err := l.service.GetTournamentPlacementsByPosition(l.ctx, guildID, playerID, 1)
+	if err != nil {
 		slog.Error("Failed to get previous wins", "guild", guildID, "player", playerID, "error", err)
 		return ""
 	} else {
-		if previousWins.Count > 0 {
-			return fmt.Sprintf("%d 👑", previousWins.Count)
+		if previousWins > 0 {
+			return fmt.Sprintf("%d 👑", previousWins)
 		}
 	}
 
@@ -332,14 +281,10 @@ func (l *Leaderboard) getPreviousPlacementEmoji(prev int, current int) string {
 }
 
 func (l *Leaderboard) getPreviousPlacements(guildID int64, tournamentID int32) map[int64]int {
-	previousPlacements, err := l.query.GetPlacementsForPeriod(l.ctx, database.GetPlacementsForPeriodParams{
-		TournamentID: tournamentID,
-		RoundDate:    sql.NullTime{Time: time.Now().Add(-24 * time.Hour), Valid: true},
-	})
-	if err == sql.ErrNoRows {
-		slog.Warn("No previous placements", "guild", guildID)
-	} else if err != nil {
+	previousPlacements, err := l.service.GetPlacementsForPeriod(l.ctx, tournamentID, time.Now().Add(-24*time.Hour))
+	if err != nil {
 		slog.Error("Failed to get previous placements", "guild", guildID, "error", err)
+		return nil
 	}
 
 	previous := make(map[int64]int)
@@ -378,11 +323,8 @@ func (l *Leaderboard) generateStats(tournamentID int32) string {
 }
 
 func (l *Leaderboard) getHoleInOneLeader(tournamentID int32) string {
-	holeInOneLeaders, err := l.query.GetHoleInOneLeaders(l.ctx, tournamentID)
-	if err == sql.ErrNoRows {
-		slog.Warn("No hole in one leaders", "tournament", tournamentID)
-		return ""
-	} else if err != nil {
+	holeInOneLeaders, err := l.service.GetHoleInOneLeaders(l.ctx, tournamentID)
+	if err != nil {
 		slog.Error("Failed to get hole in one leaders", "tournament", tournamentID, "error", err)
 		return ""
 	}
@@ -395,7 +337,7 @@ func (l *Leaderboard) getHoleInOneLeader(tournamentID int32) string {
 	leaders := []string{}
 	for i, leader := range holeInOneLeaders {
 		if i == 0 || leader.Count == holeInOneLeaders[0].Count {
-			leaders = append(leaders, fmt.Sprintf("<@%d>", leader.PlayerID.Int64))
+			leaders = append(leaders, fmt.Sprintf("<@%d>", leader.PlayerID))
 			holeInOnes = leader.Count
 		} else {
 			break
@@ -414,14 +356,12 @@ func (l *Leaderboard) getHoleInOneLeader(tournamentID int32) string {
 
 // TOOD: dedupe these two methods
 func (l *Leaderboard) getBestRounds(tournamentID int32) string {
-	rounds, err := l.query.GetBestRounds(l.ctx, tournamentID)
-	if err == sql.ErrNoRows {
-		slog.Warn("No best rounds", "tournament", tournamentID)
-		return ""
-	} else if err != nil {
+	rounds, err := l.service.GetBestRounds(l.ctx, tournamentID)
+	if err != nil {
 		slog.Error("Failed to get best rounds", "tournament", tournamentID, "error", err)
 		return ""
 	}
+
 	if len(rounds) == 0 {
 		return ""
 	}
@@ -448,14 +388,12 @@ func (l *Leaderboard) getBestRounds(tournamentID int32) string {
 }
 
 func (l *Leaderboard) getWorstRounds(tournamentID int32) string {
-	rounds, err := l.query.GetWorstRounds(l.ctx, tournamentID)
-	if err == sql.ErrNoRows {
-		slog.Warn("No best rounds", "tournament", tournamentID)
-		return ""
-	} else if err != nil {
+	rounds, err := l.service.GetWorstRounds(l.ctx, tournamentID)
+	if err != nil {
 		slog.Error("Failed to get best rounds", "tournament", tournamentID, "error", err)
 		return ""
 	}
+
 	if len(rounds) == 0 {
 		return ""
 	}
@@ -482,25 +420,28 @@ func (l *Leaderboard) getWorstRounds(tournamentID int32) string {
 }
 
 func (l *Leaderboard) getFirstMostCommonHole(tournamentID int32) string {
-	firstMost, _ := l.query.GetMostCommonHoleForNumber(l.ctx, database.GetMostCommonHoleForNumberParams{
-		TournamentID: tournamentID,
-		HoleNumber:   0,
-	})
+	firstMost, err := l.service.GetMostCommonHoleForNumber(l.ctx, tournamentID, 0)
+	if err != nil {
+		slog.Error("Failed to get most common hole for number", "tournament", tournamentID, "error", err)
+		return ""
+	}
+
 	return fmt.Sprintf("Most common opening hole: %s", colors[firstMost.Color])
 
 }
 
 func (l *Leaderboard) getLastMostCommonHole(tournamentID int32) string {
-	lastMost, _ := l.query.GetMostCommonHoleForNumber(l.ctx, database.GetMostCommonHoleForNumberParams{
-		TournamentID: tournamentID,
-		HoleNumber:   4,
-	})
-	return fmt.Sprintf("Most common finishing hole: %s", colors[lastMost.Color])
+	lastMost, err := l.service.GetMostCommonHoleForNumber(l.ctx, tournamentID, 4)
+	if err != nil {
+		slog.Error("Failed to get most common hole for number", "tournament", tournamentID, "error", err)
+		return ""
+	}
 
+	return fmt.Sprintf("Most common finishing hole: %s", colors[lastMost.Color])
 }
 
 func (l *Leaderboard) getHardestHole(tournamentID int32) string {
-	hole, err := l.query.GetHardestHole(l.ctx, tournamentID)
+	hole, err := l.service.GetHardestHole(l.ctx, tournamentID)
 	if err != nil {
 		slog.Error("Failed to get hardest hole", "tournament", tournamentID, "error", err)
 	}
@@ -508,27 +449,18 @@ func (l *Leaderboard) getHardestHole(tournamentID int32) string {
 }
 
 func (l *Leaderboard) getPerformers(reverse bool) ([]string, string, error) {
-	performers, err := l.query.GetStandardDeviation(l.ctx)
-	if err == sql.ErrNoRows {
-		slog.Info("No std dev found")
-		return []string{}, "", err
-	} else if err != nil {
-		slog.Error("Failed to std dev", "error", err)
-		return []string{}, "", err
-	}
-
-	if reverse {
-		for i, j := 0, len(performers)-1; i < j; i, j = i+1, j-1 {
-			performers[i], performers[j] = performers[j], performers[i]
-		}
+	performers, err := l.service.GetStandardDeviation(l.ctx, reverse)
+	if err != nil {
+		slog.Error("Failed to get performers", "error", err)
+		return nil, "", err
 	}
 
 	stdDev := ""
 	performerIDs := []string{}
 	for i, performer := range performers {
-		if i == 0 || performer.StandardDeviation == performers[i-1].StandardDeviation {
+		if i == 0 || performer.StdDev == performers[i-1].StdDev {
 			performerIDs = append(performerIDs, fmt.Sprintf("<@%d>", performer.PlayerID))
-			stdDev = performer.StandardDeviation
+			stdDev = performer.StdDev
 		} else {
 			break
 		}

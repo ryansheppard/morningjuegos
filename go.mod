@@ -3,6 +3,7 @@ module github.com/ryansheppard/morningjuegos
 go 1.21.0
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/bwmarrin/discordgo v0.27.1
 	github.com/lib/pq v1.10.9
 	github.com/nats-io/nats.go v1.30.2

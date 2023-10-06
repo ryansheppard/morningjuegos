@@ -15,6 +15,7 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/cache"
 	cgQueries "github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	coffeegolf "github.com/ryansheppard/morningjuegos/internal/coffeegolf/game"
+	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/service"
 	"github.com/ryansheppard/morningjuegos/internal/discord"
 	"github.com/ryansheppard/morningjuegos/internal/messenger"
 	"github.com/spf13/cobra"
@@ -51,7 +52,9 @@ var botCmd = &cobra.Command{
 
 		q := cgQueries.New(db)
 
-		cg := coffeegolf.New(ctx, q, c, db, m)
+		service := service.New(db, q)
+
+		cg := coffeegolf.New(ctx, service, c, db, m)
 
 		token := os.Getenv("DISCORD_TOKEN")
 		appID := os.Getenv("DISCORD_APP_ID")
