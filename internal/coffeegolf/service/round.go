@@ -16,13 +16,13 @@ func (s *Service) HasPlayedToday(ctx context.Context, playerID int64, tournament
 	})
 
 	if err == sql.ErrNoRows {
-		return true, nil
+		return false, nil
 	} else if err != nil {
 		slog.Error("Failed to check if player has played today", "player", playerID, "tournament", tournamentID, "error", err)
 		return false, err
 	}
 
-	return false, nil
+	return true, nil
 }
 func (s *Service) HasPlayed(ctx context.Context, playerID int64, tournamentID int32, day time.Time) (bool, error) {
 	roundDate := sql.NullTime{
@@ -35,13 +35,13 @@ func (s *Service) HasPlayed(ctx context.Context, playerID int64, tournamentID in
 		RoundDate:    roundDate,
 	})
 	if err == sql.ErrNoRows {
-		return true, nil
+		return false, nil
 	} else if err != nil {
 		slog.Error("Failed to check if player has played", "player", playerID, "tournament", tournamentID, "day", day, "error", err)
 		return false, err
 	}
 
-	return false, nil
+	return true, nil
 }
 
 func (s *Service) InsertRound(ctx context.Context, round *database.Round, holes []*database.Hole) (bool, error) {

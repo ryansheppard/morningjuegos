@@ -147,12 +147,12 @@ func (p *Parser) NewRoundFromString(message string, guildID int64, playerID int6
 	percentLine := parsePercentLine(totalStrokeLine)
 	holes := parseStrokeLines(holeLine, strokesLine)
 
-	firstRound, err := p.service.HasPlayed(p.ctx, playerID, tournamentID, dateTime.Time)
+	hasPlayed, err := p.service.HasPlayed(p.ctx, playerID, tournamentID, dateTime.Time)
 	if err != nil {
 		slog.Error("Failed to check if player has played today", "player", playerID, "tournament", tournamentID, "error", err)
 		return nil, nil, err
 	} else {
-		slog.Info("Has played", "player", playerID, "tournament", tournamentID, "firstRound", firstRound)
+		slog.Info("Has played", "player", playerID, "tournament", tournamentID, "hasPlayed", hasPlayed)
 	}
 
 	slog.Info("date", "time", dateTime.Time)
@@ -165,7 +165,7 @@ func (p *Parser) NewRoundFromString(message string, guildID int64, playerID int6
 		TotalStrokes: int32(totalStrokes),
 		Percentage:   percentLine,
 		RoundDate:    dateTime,
-		FirstRound:   firstRound,
+		FirstRound:   !hasPlayed,
 		InsertedBy:   "parser",
 	}, holes, nil
 }

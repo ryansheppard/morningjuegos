@@ -765,6 +765,7 @@ FROM round
 WHERE player_id = $1
 AND tournament_id = $2
 AND round_date = $3
+AND first_round = TRUE
 `
 
 type HasPlayedParams struct {
@@ -797,6 +798,7 @@ FROM round
 WHERE player_id = $1
 AND tournament_id = $2
 AND round_date = CURRENT_DATE
+AND first_round = TRUE
 `
 
 type HasPlayedTodayParams struct {

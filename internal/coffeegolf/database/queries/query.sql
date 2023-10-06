@@ -60,14 +60,16 @@ SELECT *
 FROM round
 WHERE player_id = $1
 AND tournament_id = $2
-AND round_date = CURRENT_DATE;
+AND round_date = CURRENT_DATE
+AND first_round = TRUE;
 
 -- name: HasPlayed :one
 SELECT *
 FROM round
 WHERE player_id = $1
 AND tournament_id = $2
-AND round_date = $3;
+AND round_date = $3
+AND first_round = TRUE;
 
 -- name: GetLeaders :many
 SELECT SUM(total_strokes) AS total_strokes, player_id

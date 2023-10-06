@@ -185,8 +185,6 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 	notYetPlayed := []string{}
 	skipCounter := 0
 	for i, leader := range strokeLeaders {
-		_, err := l.service.HasPlayedToday(l.ctx, leader.PlayerID, params.TournamentID)
-
 		placementString := ""
 		if params.IncludeEmoji {
 			placementString = l.getPlacementEmoji(i + 1)
@@ -197,10 +195,8 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 			prev = previousPlacement
 		}
 
-		hasPlayed := true
-		if err == sql.ErrNoRows {
-			hasPlayed = false
-		} else if err != nil {
+		hasPlayed, err := l.service.HasPlayedToday(l.ctx, leader.PlayerID, params.TournamentID)
+		if err != nil {
 			slog.Error("Failed to check if player has played today", "guild", params.GuildID, "player", leader.PlayerID, "error", err)
 			continue
 		}
