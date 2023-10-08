@@ -413,11 +413,10 @@ func TestGetTournamentPlacementsByPosition(t *testing.T) {
 		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 
-	rows := sqlmock.NewRows([]string{"tournament_placement", "player_id"}).
-		AddRow(2, 1).
-		AddRow(2, 2).
-		AddRow(3, 3)
-	mock.ExpectQuery("SELECT.+").WithArgs(1, 1, 1).WillReturnRows(rows)
+	rows := sqlmock.NewRows([]string{"count", "tournament_placement", "player_id"}).
+		AddRow(2, 2, 1).
+		AddRow(2, 2, 2)
+	mock.ExpectQuery("SELECT.+").WithArgs(1, 2).WillReturnRows(rows)
 
 	queries := database.New(d)
 	service := New(d, queries)
