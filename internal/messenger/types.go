@@ -1,4 +1,4 @@
-package messages
+package messenger
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 var (
 	RoundCreatedKey      = "round.created"
 	TournamentCreatedKey = "tournament.created"
+	AddPostGameKey       = "postgame.add"
+	CleanPostGameKey     = "postgame.clean"
 )
 
 type RoundCreated struct {
@@ -39,4 +41,34 @@ func NewTournamentCreatedFromJson(bytes []byte) (TournamentCreated, error) {
 
 func (t *TournamentCreated) AsBytes() ([]byte, error) {
 	return json.Marshal(t)
+}
+
+type AddPostGame struct {
+	GuildID   int64  `json:"guild_id"`
+	PlayerID  int64  `json:"player_id"`
+	ChannelID string `json:"channel_id"`
+}
+
+func NewAddPostGameFromJson(bytes []byte) (AddPostGame, error) {
+	var msg AddPostGame
+	err := json.Unmarshal(bytes, &msg)
+	return msg, err
+}
+
+func (a *AddPostGame) AsBytes() ([]byte, error) {
+	return json.Marshal(a)
+}
+
+type CleanPostGame struct {
+	GuildID int64 `json:"guild_id"`
+}
+
+func NewCleanPostGameFromJson(bytes []byte) (CleanPostGame, error) {
+	var msg CleanPostGame
+	err := json.Unmarshal(bytes, &msg)
+	return msg, err
+}
+
+func (c *CleanPostGame) AsBytes() ([]byte, error) {
+	return json.Marshal(c)
 }

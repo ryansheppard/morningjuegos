@@ -13,7 +13,6 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/cache"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/leaderboard"
-	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/messages"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/service"
 	"github.com/ryansheppard/morningjuegos/internal/messenger"
 )
@@ -72,14 +71,14 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 		}
 
 		if created {
-			msg := messages.TournamentCreated{
+			msg := messenger.TournamentCreated{
 				GuildID: guildID,
 			}
 			bytes, err := msg.AsBytes()
 			if err != nil {
 				slog.Error("Failed to marshal message", "message", msg, "error", err)
 			} else {
-				p.messenger.Publish(messages.TournamentCreatedKey, bytes)
+				p.messenger.Publish(messenger.TournamentCreatedKey, bytes)
 			}
 		}
 
@@ -98,18 +97,30 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 
 		firstRound := round.FirstRound
 
-		// Add missing rounds
+		// Add missing rounds and add to postgame
 		if roundCreated && firstRound {
-			msg := messages.RoundCreated{
+			rcMsg := messenger.RoundCreated{
 				GuildID:      guildID,
 				TournamentID: tournament.ID,
 				PlayerID:     playerID,
 			}
-			bytes, err := msg.AsBytes()
+			bytes, err := rcMsg.AsBytes()
 			if err != nil {
-				slog.Error("Failed to marshal message", "message", msg, "error", err)
+				slog.Error("Failed to marshal message", "message", rcMsg, "error", err)
 			} else {
-				p.messenger.Publish(messages.RoundCreatedKey, bytes)
+				p.messenger.Publish(messenger.RoundCreatedKey, bytes)
+			}
+
+			pgMessage := messenger.AddPostGame{
+				GuildID:   guildID,
+				PlayerID:  playerID,
+				ChannelID: m.ChannelID,
+			}
+			bytes, err = pgMessage.AsBytes()
+			if err != nil {
+				slog.Error("Failed to marshal message", "message", pgMessage, "error", err)
+			} else {
+				p.messenger.Publish(messenger.AddPostGameKey, bytes)
 			}
 		}
 

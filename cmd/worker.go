@@ -14,6 +14,7 @@ import (
 	cgQueries "github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	coffeegolf "github.com/ryansheppard/morningjuegos/internal/coffeegolf/game"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/service"
+	"github.com/ryansheppard/morningjuegos/internal/discord"
 	"github.com/ryansheppard/morningjuegos/internal/messenger"
 	"github.com/spf13/cobra"
 )
@@ -52,7 +53,17 @@ var workerCmd = &cobra.Command{
 		service := service.New(db, q)
 
 		cg := coffeegolf.New(ctx, service, c, db, m)
+
+		token := os.Getenv("DISCORD_TOKEN")
+		appID := os.Getenv("DISCORD_APP_ID")
+		d, err := discord.NewDiscord(token, appID, m, cg)
+		if err != nil {
+			slog.Error("Error creating discord", "error", err)
+			os.Exit(1)
+		}
+
 		cg.ConfigureSubscribers()
+		d.ConfigureSubscribers()
 
 		slog.Info("MorningJuegos worker is now running. Press CTRL-C to exit.")
 		sc := make(chan os.Signal, 1)

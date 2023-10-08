@@ -9,19 +9,19 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/leaderboard"
-	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/messages"
+	"github.com/ryansheppard/morningjuegos/internal/messenger"
 )
 
 const defaultStrokes = 20
 
 func (g *Game) ConfigureSubscribers() {
-	g.messenger.SubscribeAsync(messages.RoundCreatedKey, g.ProcessAddMissingRounds)
-	g.messenger.SubscribeAsync(messages.TournamentCreatedKey, g.ProcessAddTournamentWinners)
+	g.messenger.SubscribeAsync(messenger.RoundCreatedKey, g.ProcessAddMissingRounds)
+	g.messenger.SubscribeAsync(messenger.TournamentCreatedKey, g.ProcessAddTournamentWinners)
 }
 
 func (g *Game) ProcessAddMissingRounds(msg *nats.Msg) {
 	slog.Info("Processing add missing rounds message")
-	roundCreated, err := messages.NewRoundCreatedFromJson(msg.Data)
+	roundCreated, err := messenger.NewRoundCreatedFromJson(msg.Data)
 	if err != nil {
 		slog.Error("Failed to parse round created message", "error", err)
 	}
@@ -92,7 +92,7 @@ func (g *Game) AddMissingRoundsForGuild(guildID int64) {
 
 func (g *Game) ProcessAddTournamentWinners(msg *nats.Msg) {
 	slog.Info("Processing add tournament winners message")
-	roundCreated, err := messages.NewTournamentCreatedFromJson(msg.Data)
+	roundCreated, err := messenger.NewTournamentCreatedFromJson(msg.Data)
 	if err != nil {
 		slog.Error("Failed to parse tournament created message", "error", err)
 	}

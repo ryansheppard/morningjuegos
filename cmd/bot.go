@@ -58,7 +58,7 @@ var botCmd = &cobra.Command{
 
 		token := os.Getenv("DISCORD_TOKEN")
 		appID := os.Getenv("DISCORD_APP_ID")
-		d, err := discord.NewDiscord(token, appID, cg)
+		d, err := discord.NewDiscord(token, appID, m, cg)
 		if err != nil {
 			slog.Error("Error creating discord", "error", err)
 			os.Exit(1)
@@ -80,7 +80,7 @@ var botCmd = &cobra.Command{
 		<-sc
 		slog.Info("Shutting down MorningJuegos bot")
 
-		d.Discord.Close()
+		d.Session.Close()
 	},
 }
 
