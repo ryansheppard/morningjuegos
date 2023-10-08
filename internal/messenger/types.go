@@ -9,8 +9,9 @@ var (
 	RoundCreatedKey      = "round.created"
 	TournamentCreatedKey = "tournament.created"
 	AddPostGameKey       = "postgame.add"
-	CleanPostGameKey     = "postgame.clean"
 )
+
+// TODO: refactor these to use an interface or something
 
 type RoundCreated struct {
 	GuildID      int64           `json:"guild_id"`
@@ -57,18 +58,4 @@ func NewAddPostGameFromJson(bytes []byte) (AddPostGame, error) {
 
 func (a *AddPostGame) AsBytes() ([]byte, error) {
 	return json.Marshal(a)
-}
-
-type CleanPostGame struct {
-	GuildID int64 `json:"guild_id"`
-}
-
-func NewCleanPostGameFromJson(bytes []byte) (CleanPostGame, error) {
-	var msg CleanPostGame
-	err := json.Unmarshal(bytes, &msg)
-	return msg, err
-}
-
-func (c *CleanPostGame) AsBytes() ([]byte, error) {
-	return json.Marshal(c)
 }

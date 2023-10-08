@@ -55,8 +55,9 @@ func (d *Discord) CreatePostgame(guildID int64, playerID int64, channelID string
 
 	if threadID == "" {
 		thread, err := d.Session.ThreadStartComplex(channelID, &discordgo.ThreadStart{
-			Name:      threadName,
-			Invitable: false,
+			Name:                threadName,
+			Invitable:           false,
+			AutoArchiveDuration: 24 * 60,
 		})
 		if err != nil {
 			slog.Error("Error creating thread", "error", err)
@@ -64,17 +65,6 @@ func (d *Discord) CreatePostgame(guildID int64, playerID int64, channelID string
 		}
 
 		threadID = thread.ID
-
-		// TODO: add support for cleaning up postgames
-		// msg := messenger.CleanPostGame{
-		// 	GuildID: guildID,
-		// }
-		// bytes, err := msg.AsBytes()
-		// if err != nil {
-		// 	slog.Error("Failed to marshal message", "message", msg, "error", err)
-		// } else {
-		// 	d.Messenger.Publish(messenger.CleanPostGameKey, bytes)
-		// }
 	}
 
 	d.Session.ChannelMessageSend(threadID, fmt.Sprintf("<@%s>", playerIDAsString))
