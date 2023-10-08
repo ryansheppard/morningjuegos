@@ -422,13 +422,13 @@ func TestGetTournamentPlacementsByPosition(t *testing.T) {
 	queries := database.New(d)
 	service := New(d, queries)
 
-	placements, err := service.GetTournamentPlacementsByPosition(ctx, 1, 1, 1)
+	placements, err := service.GetTournamentPlacementsByPosition(ctx, 1, 2)
 	if err != nil {
 		t.Errorf("error was not expected while getting placements: %s", err)
 	}
 
-	if placements != 2 {
-		t.Errorf("expected placements to be 2, got %d", placements)
+	if len(placements) != 2 {
+		t.Errorf("expected placements to be 2, got %d", len(placements))
 	}
 }
 
@@ -443,7 +443,7 @@ func TestGetTournamentPlacementsByPositionFails(t *testing.T) {
 	queries := database.New(d)
 	service := New(d, queries)
 
-	_, err = service.GetTournamentPlacementsByPosition(ctx, 1, 1, 1)
+	_, err = service.GetTournamentPlacementsByPosition(ctx, 1, 1)
 	if err == nil {
 		t.Errorf("expected error while getting placements, got nil")
 	}

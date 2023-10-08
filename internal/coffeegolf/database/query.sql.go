@@ -629,58 +629,35 @@ func (q *Queries) GetTournamentPlacements(ctx context.Context, tournamentID int3
 	return items, nil
 }
 
-const getTournamentPlacementsByPosition = `-- name: GetTournamentPlacementsByPosition :one
-SELECT COUNT(*) AS count, tournament_placement
+const getTournamentPlacementsByPosition = `-- name: GetTournamentPlacementsByPosition :many
+SELECT COUNT(*) AS count, tournament_placement, player_id
 FROM tournament_placement
 LEFT JOIN tournament ON tournament_placement.tournament_id = tournament.id
 WHERE tournament.guild_id = $1
-AND player_id = $2
-AND tournament_placement = $3
+AND tournament_placement = $2
 GROUP BY tournament_placement, player_id
 `
 
 type GetTournamentPlacementsByPositionParams struct {
 	GuildID             int64
-	PlayerID            int64
 	TournamentPlacement int32
 }
 
 type GetTournamentPlacementsByPositionRow struct {
 	Count               int64
 	TournamentPlacement int32
-}
-
-func (q *Queries) GetTournamentPlacementsByPosition(ctx context.Context, arg GetTournamentPlacementsByPositionParams) (GetTournamentPlacementsByPositionRow, error) {
-	row := q.db.QueryRowContext(ctx, getTournamentPlacementsByPosition, arg.GuildID, arg.PlayerID, arg.TournamentPlacement)
-	var i GetTournamentPlacementsByPositionRow
-	err := row.Scan(&i.Count, &i.TournamentPlacement)
-	return i, err
-}
-
-const getTournamentWinnersForGuild = `-- name: GetTournamentWinnersForGuild :many
-SELECT COUNT(*) AS count, tournament_placement, player_id
-FROM tournament_placement
-LEFT JOIN tournament ON tournament_placement.tournament_id = tournament.id
-WHERE tournament.guild_id = $1
-AND tournament_placement = 1
-GROUP BY tournament_placement, player_id
-`
-
-type GetTournamentWinnersForGuildRow struct {
-	Count               int64
-	TournamentPlacement int32
 	PlayerID            int64
 }
 
-func (q *Queries) GetTournamentWinnersForGuild(ctx context.Context, guildID int64) ([]GetTournamentWinnersForGuildRow, error) {
-	rows, err := q.db.QueryContext(ctx, getTournamentWinnersForGuild, guildID)
+func (q *Queries) GetTournamentPlacementsByPosition(ctx context.Context, arg GetTournamentPlacementsByPositionParams) ([]GetTournamentPlacementsByPositionRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTournamentPlacementsByPosition, arg.GuildID, arg.TournamentPlacement)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetTournamentWinnersForGuildRow
+	var items []GetTournamentPlacementsByPositionRow
 	for rows.Next() {
-		var i GetTournamentWinnersForGuildRow
+		var i GetTournamentPlacementsByPositionRow
 		if err := rows.Scan(&i.Count, &i.TournamentPlacement, &i.PlayerID); err != nil {
 			return nil, err
 		}

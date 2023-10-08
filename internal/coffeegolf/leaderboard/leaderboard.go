@@ -181,6 +181,11 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 		previousPlacements = l.getPreviousPlacements(params.GuildID, params.TournamentID)
 	}
 
+	previousWins := map[int64]int64{}
+	if params.IncludeEmoji {
+		previousWins = l.getPreviousWins(params.GuildID)
+	}
+
 	leaderStrings := []string{}
 	notYetPlayed := []string{}
 	skipCounter := 0
@@ -208,7 +213,12 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 
 		previousWinString := ""
 		if params.IncludeEmoji {
-			previousWinString = l.getCrowns(params.GuildID, leader.PlayerID)
+			previousWins, ok := previousWins[leader.PlayerID]
+			if ok {
+				if previousWins > 0 {
+					previousWinString = fmt.Sprintf("%d 👑", previousWins)
+				}
+			}
 		}
 
 		if hasPlayed {
@@ -241,21 +251,6 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 	return leaderString + notYetPlayedString
 }
 
-// todo replace with a single query instead of per player
-func (l *Leaderboard) getCrowns(guildID int64, playerID int64) string {
-	previousWins, err := l.service.GetTournamentPlacementsByPosition(l.ctx, guildID, playerID, 1)
-	if err != nil {
-		slog.Error("Failed to get previous wins", "guild", guildID, "player", playerID, "error", err)
-		return ""
-	} else {
-		if previousWins > 0 {
-			return fmt.Sprintf("%d 👑", previousWins)
-		}
-	}
-
-	return ""
-}
-
 func (l *Leaderboard) getPlacementEmoji(placement int) string {
 	if placement, ok := placements[placement]; ok {
 		return placement
@@ -286,6 +281,21 @@ func (l *Leaderboard) getPreviousPlacements(guildID int64, tournamentID int32) m
 	previous := make(map[int64]int)
 	for i, previousPlacement := range previousPlacements {
 		previous[previousPlacement.PlayerID] = i + 1
+	}
+
+	return previous
+}
+
+func (l *Leaderboard) getPreviousWins(guildID int64) map[int64]int64 {
+	previousWins, err := l.service.GetTournamentPlacementsByPosition(l.ctx, guildID, 1)
+	if err != nil {
+		slog.Error("Failed to get previous wins", "guild", guildID, "error", err)
+		return nil
+	}
+
+	previous := make(map[int64]int64)
+	for _, previousWin := range previousWins {
+		previous[previousWin.PlayerID] = previousWin.Wins
 	}
 
 	return previous

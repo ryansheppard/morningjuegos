@@ -129,6 +129,7 @@ func (s *Service) GetTournamentPlacements(ctx context.Context, tournamentID int3
 type Leader struct {
 	PlayerID     int64
 	TotalStrokes int64
+	Wins         int64
 }
 
 func (s *Service) GetFinalLeaders(ctx context.Context, tournamentID int32) ([]*Leader, error) {
@@ -197,18 +198,25 @@ func (s *Service) GetLeaders(ctx context.Context, tournamentID int32, start time
 	return leaderList, nil
 }
 
-func (s *Service) GetTournamentPlacementsByPosition(ctx context.Context, guildID int64, playerID int64, tournamentPlacement int32) (int64, error) {
+func (s *Service) GetTournamentPlacementsByPosition(ctx context.Context, guildID int64, tournamentPlacement int32) ([]*Leader, error) {
 	previousWins, err := s.queries.GetTournamentPlacementsByPosition(ctx, database.GetTournamentPlacementsByPositionParams{
 		GuildID:             guildID,
-		PlayerID:            playerID,
 		TournamentPlacement: tournamentPlacement,
 	})
 	if err != nil && err != sql.ErrNoRows {
-		slog.Error("Failed to get previous placements", "guild", guildID, "player", playerID, "error", err)
-		return 0, err
+		slog.Error("Failed to get previous placements", "guild", guildID, "error", err)
+		return nil, err
 	}
 
-	return previousWins.Count, nil
+	var leaderList []*Leader
+	for _, previousWin := range previousWins {
+		leaderList = append(leaderList, &Leader{
+			PlayerID: previousWin.PlayerID,
+			Wins:     previousWin.Count,
+		})
+	}
+
+	return leaderList, nil
 }
 
 func (s *Service) GetPlacementsForPeriod(ctx context.Context, tournamentID int32, roundDate time.Time) ([]*Leader, error) {
