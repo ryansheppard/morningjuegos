@@ -185,14 +185,14 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 	notYetPlayed := []string{}
 	skipCounter := 0
 	for i, leader := range strokeLeaders {
-		placementString := ""
-		if params.IncludeEmoji {
-			placementString = l.getPlacementEmoji(i + 1)
-		}
-
 		prev := -1
 		if previousPlacement, ok := previousPlacements[leader.PlayerID]; ok {
 			prev = previousPlacement
+		}
+
+		placementString := ""
+		if params.IncludeEmoji && prev > 0 {
+			placementString = l.getPlacementEmoji(prev + 1)
 		}
 
 		hasPlayed, err := l.service.HasPlayedToday(l.ctx, leader.PlayerID, params.TournamentID)
