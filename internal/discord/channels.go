@@ -58,6 +58,7 @@ func (d *Discord) CreatePostgame(guildID int64, playerID int64, channelID string
 			Name:                threadName,
 			Invitable:           false,
 			AutoArchiveDuration: 24 * 60,
+			Type:                discordgo.ChannelTypeGuildPrivateThread,
 		})
 		if err != nil {
 			slog.Error("Error creating thread", "error", err)
