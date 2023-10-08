@@ -192,7 +192,7 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 
 		placementString := ""
 		if params.IncludeEmoji && prev > 0 {
-			placementString = l.getPlacementEmoji(prev + 1)
+			placementString = l.getPlacementEmoji(prev)
 		}
 
 		hasPlayed, err := l.service.HasPlayedToday(l.ctx, leader.PlayerID, params.TournamentID)
