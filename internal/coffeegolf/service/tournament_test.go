@@ -236,53 +236,6 @@ func TestGetTournamentPlacementsFails(t *testing.T) {
 	}
 }
 
-func TestGetFinalLeaders(t *testing.T) {
-	t.Parallel()
-
-	d, mock, err := sqlmock.New()
-	if err != nil {
-		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer d.Close()
-
-	rows := sqlmock.NewRows([]string{"player_id", "total_strokes"}).
-		AddRow(1, 10).
-		AddRow(2, 11).
-		AddRow(3, 12)
-	mock.ExpectQuery("SELECT.+").WithArgs(1).WillReturnRows(rows)
-
-	queries := database.New(d)
-	service := New(d, queries)
-
-	leaders, err := service.GetFinalLeaders(ctx, 1)
-	if err != nil {
-		t.Errorf("error was not expected while getting leaders: %s", err)
-	}
-
-	if len(leaders) != 3 {
-		t.Errorf("expected leaders length to be 3, got %d", len(leaders))
-	}
-}
-
-func TestGetFinalLeadersFails(t *testing.T) {
-	t.Parallel()
-
-	d, _, err := sqlmock.New()
-	if err != nil {
-		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer d.Close()
-
-	queries := database.New(d)
-	service := New(d, queries)
-
-	_, err = service.GetFinalLeaders(ctx, 1)
-
-	if err == nil {
-		t.Errorf("expected error while getting leaders, got nil")
-	}
-}
-
 func TestCleanTournamentPlacements(t *testing.T) {
 	t.Parallel()
 

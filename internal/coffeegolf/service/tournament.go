@@ -132,24 +132,6 @@ type Leader struct {
 	Wins         int64
 }
 
-func (s *Service) GetFinalLeaders(ctx context.Context, tournamentID int32) ([]*Leader, error) {
-	placements, err := s.queries.GetFinalLeaders(ctx, tournamentID)
-	if err != nil {
-		slog.Error("Failed to get final leaders", "tournamentID", tournamentID, "error", err)
-		return nil, err
-	}
-
-	leaders := []*Leader{}
-	for _, placement := range placements {
-		leaders = append(leaders, &Leader{
-			PlayerID:     placement.PlayerID,
-			TotalStrokes: placement.TotalStrokes,
-		})
-	}
-
-	return leaders, nil
-}
-
 func (s *Service) CleanTournamentPlacements(ctx context.Context, tournamentID int32) error {
 	err := s.queries.CleanTournamentPlacements(ctx, tournamentID)
 	if err != nil {

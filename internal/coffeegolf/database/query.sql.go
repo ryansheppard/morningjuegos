@@ -264,43 +264,6 @@ func (q *Queries) GetBestRounds(ctx context.Context, tournamentID int32) ([]GetB
 	return items, nil
 }
 
-const getFinalLeaders = `-- name: GetFinalLeaders :many
-SELECT SUM(total_strokes) AS total_strokes, player_id
-FROM round
-WHERE tournament_id = $1
-AND first_round = TRUE
-GROUP BY player_id
-ORDER BY total_strokes ASC
-`
-
-type GetFinalLeadersRow struct {
-	TotalStrokes int64
-	PlayerID     int64
-}
-
-func (q *Queries) GetFinalLeaders(ctx context.Context, tournamentID int32) ([]GetFinalLeadersRow, error) {
-	rows, err := q.db.QueryContext(ctx, getFinalLeaders, tournamentID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetFinalLeadersRow
-	for rows.Next() {
-		var i GetFinalLeadersRow
-		if err := rows.Scan(&i.TotalStrokes, &i.PlayerID); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getHardestHole = `-- name: GetHardestHole :one
 SELECT AVG(strokes) AS strokes, color
 FROM hole 

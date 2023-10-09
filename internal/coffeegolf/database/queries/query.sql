@@ -70,14 +70,6 @@ AND first_round = TRUE
 GROUP BY player_id
 ORDER BY total_strokes ASC;
 
--- name: GetFinalLeaders :many
-SELECT SUM(total_strokes) AS total_strokes, player_id
-FROM round
-WHERE tournament_id = $1
-AND first_round = TRUE
-GROUP BY player_id
-ORDER BY total_strokes ASC;
-
 -- name: GetPlacementsForPeriod :many
 SELECT SUM(total_strokes) AS total_strokes, player_id
 FROM round

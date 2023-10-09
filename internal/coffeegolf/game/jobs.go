@@ -128,7 +128,7 @@ func (g *Game) AddTournamentWinnersForGuild(guildID int64) {
 		}
 
 		if len(uniquePlayers) != len(placements) {
-			leaders, err := g.service.GetFinalLeaders(g.ctx, tournament.ID)
+			leaders, err := g.service.GetLeaders(g.ctx, tournament.ID)
 			if err != nil {
 				slog.Error("Failed to get final leaders", "tournament", tournament, "error", err)
 				continue
