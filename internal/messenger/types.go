@@ -11,8 +11,6 @@ var (
 	AddPostGameKey       = "postgame.add"
 )
 
-// TODO: refactor these to use an interface or something
-
 type Message interface {
 	AsBytes() ([]byte, error)
 	GetKey() string

@@ -43,7 +43,6 @@ func (d *Discord) Configure() error {
 
 	d.Session.AddHandler(d.messageCreate)
 
-	// TODO: clean these up
 	d.Session.Identify.Intents = discordgo.IntentsGuilds |
 		discordgo.IntentsGuildMessages |
 		discordgo.IntentsGuildMembers |
