@@ -39,7 +39,6 @@ func (d *Discord) IsInCorrectChannel(guildID string, channelID string) (bool, er
 			d.cache.SetKey(fmt.Sprintf("%s:%s", "channel", guildID), channelID, 86400)
 			return true, nil
 		}
-
 	}
 
 	return false, nil
