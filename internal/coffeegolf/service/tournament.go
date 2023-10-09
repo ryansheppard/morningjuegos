@@ -76,7 +76,7 @@ func (s *Service) GetOrCreateTournament(ctx context.Context, guildID int64, inse
 		now := time.Now()
 		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 		end := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
-		endDate := end.AddDate(0, 0, defaultTouramentLength)
+		endDate := end.AddDate(0, 0, defaultTouramentLength-1)
 
 		tournament, err := s.CreateTournament(ctx, guildID, start, endDate, insertedBy)
 		if err != nil {
