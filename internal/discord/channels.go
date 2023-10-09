@@ -11,36 +11,37 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/messenger"
 )
 
-const correctChannel = "morningjuegos"
+// const correctChannel = "morningjuegos"
 
 func (d *Discord) IsInCorrectChannel(guildID string, channelID string) (bool, error) {
-	cached, err := d.cache.GetKey(fmt.Sprintf("%s:%s:%s", "correctChannel", guildID, channelID))
-	if err != nil {
-		slog.Error("Failed to get channel from cache", "guild", guildID, "channel", channelID, "error", err)
-	}
+	return true, nil
+	// cached, err := d.cache.GetKey(fmt.Sprintf("%s:%s:%s", "correctChannel", guildID, channelID))
+	// if err != nil {
+	// 	slog.Error("Failed to get channel from cache", "guild", guildID, "channel", channelID, "error", err)
+	// }
 
-	if cached != nil {
-		return cached.(string) == "1", nil
-	}
+	// if cached != nil {
+	// 	return cached.(string) == "1", nil
+	// }
 
-	channels, err := d.Session.GuildChannels(guildID)
-	if err != nil {
-		slog.Error("Error getting guild channels", "error", err)
-		return false, err
-	}
+	// channels, err := d.Session.GuildChannels(guildID)
+	// if err != nil {
+	// 	slog.Error("Error getting guild channels", "error", err)
+	// 	return false, err
+	// }
 
-	inCorrectChannel := false
-	for _, channel := range channels {
-		if channel.ID == channelID && channel.Name == correctChannel && channel.Type == discordgo.ChannelTypeGuildText {
-			inCorrectChannel = true
-			break
-		}
+	// inCorrectChannel := false
+	// for _, channel := range channels {
+	// 	if channel.ID == channelID && channel.Name == correctChannel && channel.Type == discordgo.ChannelTypeGuildText {
+	// 		inCorrectChannel = true
+	// 		break
+	// 	}
 
-	}
+	// }
 
-	d.cache.SetKey(fmt.Sprintf("%s:%s:%s", "correctChannel", guildID, channelID), inCorrectChannel, 86400)
+	// d.cache.SetKey(fmt.Sprintf("%s:%s:%s", "correctChannel", guildID, channelID), inCorrectChannel, 86400)
 
-	return inCorrectChannel, nil
+	// return inCorrectChannel, nil
 }
 
 func (d *Discord) ConfigureSubscribers() {
