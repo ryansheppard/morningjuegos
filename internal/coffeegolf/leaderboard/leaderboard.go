@@ -31,20 +31,18 @@ var (
 )
 
 type Leaderboard struct {
-	ctx     context.Context
 	service *service.Service
 	cache   *cache.Cache
 }
 
-func New(ctx context.Context, service *service.Service, cache *cache.Cache) *Leaderboard {
+func New(service *service.Service, cache *cache.Cache) *Leaderboard {
 	return &Leaderboard{
-		ctx:     ctx,
 		service: service,
 		cache:   cache,
 	}
 }
 
-func (l *Leaderboard) GenerateLeaderboard(guildIDAsString string) string {
+func (l *Leaderboard) GenerateLeaderboard(ctx context.Context, guildIDAsString string) string {
 	// includeEmoji gets set false when parsing a date specific leaderboard, so it gets used in a lot of places
 	includeEmoji := true
 
@@ -56,7 +54,7 @@ func (l *Leaderboard) GenerateLeaderboard(guildIDAsString string) string {
 
 	slog.Info("Generating leaderboard", "guild", guildID)
 
-	tournament, err := l.service.GetActiveTournament(l.ctx, guildID)
+	tournament, err := l.service.GetActiveTournament(ctx, guildID)
 	if err == sql.ErrNoRows {
 		return "Could not find a tournament for this discord server"
 	} else if err != nil {
@@ -68,7 +66,7 @@ func (l *Leaderboard) GenerateLeaderboard(guildIDAsString string) string {
 	cacheKey := ""
 	if includeEmoji {
 		cacheKey = GetLeaderboardCacheKey(guildID)
-		cached, err = l.cache.GetKey(cacheKey)
+		cached, err = l.cache.GetKey(ctx, cacheKey)
 		if err != nil {
 			slog.Error("Failed to get leaderboard from cache", "guild", guildID, "error", err)
 		}
@@ -88,18 +86,18 @@ func (l *Leaderboard) GenerateLeaderboard(guildIDAsString string) string {
 		FirstRound:   true,
 		IncludeEmoji: includeEmoji,
 	}
-	leaderString := l.generateLeaderString(leaderParams)
+	leaderString := l.generateLeaderString(ctx, leaderParams)
 
 	all := header + "\n\n" + leaderString
 
 	if includeEmoji {
-		l.cache.SetKey(cacheKey, all, 3600)
+		l.cache.SetKey(ctx, cacheKey, all, 3600)
 	}
 
 	return all
 }
 
-func (l *Leaderboard) GenerateStats(guildIDString string) string {
+func (l *Leaderboard) GenerateStats(ctx context.Context, guildIDString string) string {
 	guildID, err := strconv.ParseInt(guildIDString, 10, 64)
 	if err != nil {
 		slog.Error("Failed to parse guildID", "guild", guildIDString, "error", err)
@@ -108,7 +106,7 @@ func (l *Leaderboard) GenerateStats(guildIDString string) string {
 
 	slog.Info("Generating stats", "guild", guildID)
 
-	tournament, err := l.service.GetActiveTournament(l.ctx, guildID)
+	tournament, err := l.service.GetActiveTournament(ctx, guildID)
 	if err == sql.ErrNoRows {
 		return "Could not find a tournament for this discord server"
 	} else if err != nil {
@@ -118,7 +116,7 @@ func (l *Leaderboard) GenerateStats(guildIDString string) string {
 
 	cacheKey := GetStatsCacheKey(guildID)
 	var cached interface{}
-	cached, err = l.cache.GetKey(cacheKey)
+	cached, err = l.cache.GetKey(ctx, cacheKey)
 	if err != nil {
 		slog.Error("Failed to get stats from cache", "guild", guildID, "error", err)
 	}
@@ -131,11 +129,11 @@ func (l *Leaderboard) GenerateStats(guildIDString string) string {
 
 	header := l.generateHeader(tournament)
 
-	statsStr := l.generateStats(tournament.ID)
+	statsStr := l.generateStats(ctx, tournament.ID)
 
 	all := header + "\n\n" + statsStr
 
-	l.cache.SetKey(cacheKey, all, 3600)
+	l.cache.SetKey(ctx, cacheKey, all, 3600)
 
 	return all
 }
@@ -155,9 +153,9 @@ type generateLeaderStringParams struct {
 	IncludeEmoji bool
 }
 
-func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) string {
+func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateLeaderStringParams) string {
 	slog.Info("Generating leaderboard string", "guild", params.GuildID, "tournament", params)
-	strokeLeaders, err := l.service.GetLeaders(l.ctx, params.TournamentID)
+	strokeLeaders, err := l.service.GetLeaders(ctx, params.TournamentID)
 
 	if err != nil {
 		slog.Error("Failed to get leaders", "guild", params.GuildID, "error", err)
@@ -171,12 +169,12 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 
 	previousPlacements := map[int64]int{}
 	if params.IncludeEmoji {
-		previousPlacements = l.getPreviousPlacements(params.GuildID, params.TournamentID)
+		previousPlacements = l.getPreviousPlacements(ctx, params.GuildID, params.TournamentID)
 	}
 
 	previousWins := map[int64]int64{}
 	if params.IncludeEmoji {
-		previousWins = l.getPreviousWins(params.GuildID)
+		previousWins = l.getPreviousWins(ctx, params.GuildID)
 	}
 
 	leaderStrings := []string{}
@@ -193,7 +191,7 @@ func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) st
 			placementString = l.getPlacementEmoji(prev)
 		}
 
-		hasPlayed, err := l.service.HasPlayedToday(l.ctx, leader.PlayerID, params.TournamentID)
+		hasPlayed, err := l.service.HasPlayedToday(ctx, leader.PlayerID, params.TournamentID)
 		if err != nil {
 			slog.Error("Failed to check if player has played today", "guild", params.GuildID, "player", leader.PlayerID, "error", err)
 			continue
@@ -264,8 +262,8 @@ func (l *Leaderboard) getPreviousPlacementEmoji(prev int, current int) string {
 	return ""
 }
 
-func (l *Leaderboard) getPreviousPlacements(guildID int64, tournamentID int32) map[int64]int {
-	previousPlacements, err := l.service.GetPlacementsForPeriod(l.ctx, tournamentID, time.Now().Add(-24*time.Hour))
+func (l *Leaderboard) getPreviousPlacements(ctx context.Context, guildID int64, tournamentID int32) map[int64]int {
+	previousPlacements, err := l.service.GetPlacementsForPeriod(ctx, tournamentID, time.Now().Add(-24*time.Hour))
 	if err != nil {
 		slog.Error("Failed to get previous placements", "guild", guildID, "error", err)
 		return nil
@@ -279,8 +277,8 @@ func (l *Leaderboard) getPreviousPlacements(guildID int64, tournamentID int32) m
 	return previous
 }
 
-func (l *Leaderboard) getPreviousWins(guildID int64) map[int64]int64 {
-	previousWins, err := l.service.GetTournamentPlacementsByPosition(l.ctx, guildID, 1)
+func (l *Leaderboard) getPreviousWins(ctx context.Context, guildID int64) map[int64]int64 {
+	previousWins, err := l.service.GetTournamentPlacementsByPosition(ctx, guildID, 1)
 	if err != nil {
 		slog.Error("Failed to get previous wins", "guild", guildID, "error", err)
 		return nil
@@ -295,15 +293,15 @@ func (l *Leaderboard) getPreviousWins(guildID int64) map[int64]int64 {
 }
 
 // TODO: this should not have a newline for empty results
-func (l *Leaderboard) generateStats(tournamentID int32) string {
-	holeInOneString := l.getHoleInOneLeader(tournamentID)
-	bestRoundString := l.getBestRounds(tournamentID)
-	worstRoundString := l.getWorstRounds(tournamentID)
-	mostCommon := l.getFirstMostCommonHole(tournamentID)
-	lastCommon := l.getLastMostCommonHole(tournamentID)
-	hardestHole := l.getHardestHole(tournamentID)
-	bestPerformers := l.getBestPerformers()
-	worstPerformers := l.getWorstPerformers()
+func (l *Leaderboard) generateStats(ctx context.Context, tournamentID int32) string {
+	holeInOneString := l.getHoleInOneLeader(ctx, tournamentID)
+	bestRoundString := l.getBestRounds(ctx, tournamentID)
+	worstRoundString := l.getWorstRounds(ctx, tournamentID)
+	mostCommon := l.getFirstMostCommonHole(ctx, tournamentID)
+	lastCommon := l.getLastMostCommonHole(ctx, tournamentID)
+	hardestHole := l.getHardestHole(ctx, tournamentID)
+	bestPerformers := l.getBestPerformers(ctx)
+	worstPerformers := l.getWorstPerformers(ctx)
 
 	statsHeader := "Stats powered by AWS Next Gen Stats"
 	statsStr := strings.Join([]string{
@@ -321,8 +319,8 @@ func (l *Leaderboard) generateStats(tournamentID int32) string {
 	return statsStr
 }
 
-func (l *Leaderboard) getHoleInOneLeader(tournamentID int32) string {
-	holeInOneLeaders, err := l.service.GetHoleInOneLeaders(l.ctx, tournamentID)
+func (l *Leaderboard) getHoleInOneLeader(ctx context.Context, tournamentID int32) string {
+	holeInOneLeaders, err := l.service.GetHoleInOneLeaders(ctx, tournamentID)
 	if err != nil {
 		slog.Error("Failed to get hole in one leaders", "tournament", tournamentID, "error", err)
 		return ""
@@ -354,8 +352,8 @@ func (l *Leaderboard) getHoleInOneLeader(tournamentID int32) string {
 }
 
 // TOOD: dedupe these two methods
-func (l *Leaderboard) getBestRounds(tournamentID int32) string {
-	rounds, err := l.service.GetBestRounds(l.ctx, tournamentID)
+func (l *Leaderboard) getBestRounds(ctx context.Context, tournamentID int32) string {
+	rounds, err := l.service.GetBestRounds(ctx, tournamentID)
 	if err != nil {
 		slog.Error("Failed to get best rounds", "tournament", tournamentID, "error", err)
 		return ""
@@ -386,8 +384,8 @@ func (l *Leaderboard) getBestRounds(tournamentID int32) string {
 	return fmt.Sprintf("Best round%s of the tournament: %s, %d strokes 🙇", plural, bestMentions, strokes)
 }
 
-func (l *Leaderboard) getWorstRounds(tournamentID int32) string {
-	rounds, err := l.service.GetWorstRounds(l.ctx, tournamentID)
+func (l *Leaderboard) getWorstRounds(ctx context.Context, tournamentID int32) string {
+	rounds, err := l.service.GetWorstRounds(ctx, tournamentID)
 	if err != nil {
 		slog.Error("Failed to get best rounds", "tournament", tournamentID, "error", err)
 		return ""
@@ -418,8 +416,8 @@ func (l *Leaderboard) getWorstRounds(tournamentID int32) string {
 	return fmt.Sprintf("Worst round%s of the tournament: %s, %d strokes 🤡%s", plural, worstMentions, strokes, plural)
 }
 
-func (l *Leaderboard) getFirstMostCommonHole(tournamentID int32) string {
-	firstMost, err := l.service.GetMostCommonHoleForNumber(l.ctx, tournamentID, 0)
+func (l *Leaderboard) getFirstMostCommonHole(ctx context.Context, tournamentID int32) string {
+	firstMost, err := l.service.GetMostCommonHoleForNumber(ctx, tournamentID, 0)
 	if err != nil {
 		slog.Error("Failed to get most common hole for number", "tournament", tournamentID, "error", err)
 		return ""
@@ -429,8 +427,8 @@ func (l *Leaderboard) getFirstMostCommonHole(tournamentID int32) string {
 
 }
 
-func (l *Leaderboard) getLastMostCommonHole(tournamentID int32) string {
-	lastMost, err := l.service.GetMostCommonHoleForNumber(l.ctx, tournamentID, 4)
+func (l *Leaderboard) getLastMostCommonHole(ctx context.Context, tournamentID int32) string {
+	lastMost, err := l.service.GetMostCommonHoleForNumber(ctx, tournamentID, 4)
 	if err != nil {
 		slog.Error("Failed to get most common hole for number", "tournament", tournamentID, "error", err)
 		return ""
@@ -439,16 +437,16 @@ func (l *Leaderboard) getLastMostCommonHole(tournamentID int32) string {
 	return fmt.Sprintf("Most common finishing hole: %s", colors[lastMost.Color])
 }
 
-func (l *Leaderboard) getHardestHole(tournamentID int32) string {
-	hole, err := l.service.GetHardestHole(l.ctx, tournamentID)
+func (l *Leaderboard) getHardestHole(ctx context.Context, tournamentID int32) string {
+	hole, err := l.service.GetHardestHole(ctx, tournamentID)
 	if err != nil {
 		slog.Error("Failed to get hardest hole", "tournament", tournamentID, "error", err)
 	}
 	return fmt.Sprintf("Hardest hole: %s with an average of %0.2f strokes", colors[hole.Color], hole.Strokes)
 }
 
-func (l *Leaderboard) getPerformers(reverse bool) ([]string, string, error) {
-	performers, err := l.service.GetStandardDeviation(l.ctx, reverse)
+func (l *Leaderboard) getPerformers(ctx context.Context, reverse bool) ([]string, string, error) {
+	performers, err := l.service.GetStandardDeviation(ctx, reverse)
 	if err != nil {
 		slog.Error("Failed to get performers", "error", err)
 		return nil, "", err
@@ -468,10 +466,10 @@ func (l *Leaderboard) getPerformers(reverse bool) ([]string, string, error) {
 	return performerIDs, stdDev, nil
 }
 
-func (l *Leaderboard) getWorstPerformers() string {
+func (l *Leaderboard) getWorstPerformers(ctx context.Context) string {
 	worstPerformerString := ""
 
-	worstPerformerIDs, stdDev, err := l.getPerformers(true)
+	worstPerformerIDs, stdDev, err := l.getPerformers(ctx, true)
 	if err != nil {
 		return worstPerformerString
 	}
@@ -481,10 +479,10 @@ func (l *Leaderboard) getWorstPerformers() string {
 	return fmt.Sprintf("[All Time] Least consistent players: %v with a standard deviation of %s strokes", worstPerformerMentions, stdDev)
 }
 
-func (l *Leaderboard) getBestPerformers() string {
+func (l *Leaderboard) getBestPerformers(ctx context.Context) string {
 	bestPerformersString := ""
 
-	bestPerformerIDs, stdDev, err := l.getPerformers(false)
+	bestPerformerIDs, stdDev, err := l.getPerformers(ctx, false)
 	if err != nil {
 		return bestPerformersString
 	}

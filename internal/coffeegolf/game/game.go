@@ -3,6 +3,7 @@ package game
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/ryansheppard/morningjuegos/internal/cache"
@@ -23,8 +24,8 @@ type Game struct {
 
 // Todo replace with withoptions
 func New(ctx context.Context, service *service.Service, cache *cache.Cache, db *sql.DB, messenger *messenger.Messenger) *Game {
-	parser := parser.New(ctx, service, cache, messenger)
-	leaderboard := leaderboard.New(ctx, service, cache)
+	parser := parser.New(service, cache, messenger)
+	leaderboard := leaderboard.New(service, cache)
 	return &Game{
 		ctx:         ctx,
 		service:     service,
@@ -36,19 +37,25 @@ func New(ctx context.Context, service *service.Service, cache *cache.Cache, db *
 }
 
 func (g *Game) LeaderboardCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	ctx, cancel := context.WithTimeout(g.ctx, 1*time.Second)
+	defer cancel()
+
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: g.leaderboard.GenerateLeaderboard(i.GuildID),
+			Content: g.leaderboard.GenerateLeaderboard(ctx, i.GuildID),
 		},
 	})
 }
 
 func (g *Game) StatsCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	ctx, cancel := context.WithTimeout(g.ctx, 1*time.Second)
+	defer cancel()
+
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: g.leaderboard.GenerateStats(i.GuildID),
+			Content: g.leaderboard.GenerateStats(ctx, i.GuildID),
 		},
 	})
 }

@@ -1,7 +1,9 @@
 package discord
 
 import (
+	"context"
 	"log/slog"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/prometheus/client_golang/prometheus"
@@ -21,7 +23,10 @@ func (d *Discord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate
 		return
 	}
 
-	isInCorrectChannel, err := d.IsInCorrectChannel(m.GuildID, m.ChannelID)
+	ctx, cancel := context.WithTimeout(d.ctx, 1*time.Second)
+	defer cancel()
+
+	isInCorrectChannel, err := d.IsInCorrectChannel(ctx, m.GuildID, m.ChannelID)
 	if err != nil {
 		slog.Info("Error getting guild channels", "error", err)
 	}
@@ -30,7 +35,7 @@ func (d *Discord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate
 		return
 	}
 
-	status := d.CoffeeGolf.Parser.ParseMessage(m)
+	status := d.CoffeeGolf.Parser.ParseMessage(ctx, m)
 	switch status {
 	case parser.FirstRound:
 		s.MessageReactionAdd(m.ChannelID, m.ID, "👍")

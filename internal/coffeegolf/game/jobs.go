@@ -42,7 +42,7 @@ func (g *Game) AddMissingRoundsForGuild(guildID int64) {
 
 	// clear cache
 	cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
-	g.cache.DeleteKey(cacheKey)
+	g.cache.DeleteKey(g.ctx, cacheKey)
 
 	start := tournament.StartTime
 
@@ -110,7 +110,7 @@ func (g *Game) AddTournamentWinnersForGuild(guildID int64) {
 	}
 	if len(tournaments) > 0 {
 		cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
-		g.cache.DeleteKey(cacheKey)
+		g.cache.DeleteKey(g.ctx, cacheKey)
 	}
 
 	for _, tournament := range tournaments {

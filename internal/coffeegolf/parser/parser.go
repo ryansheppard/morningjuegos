@@ -26,15 +26,13 @@ const (
 )
 
 type Parser struct {
-	ctx       context.Context
 	service   *service.Service
 	cache     *cache.Cache
 	messenger *messenger.Messenger
 }
 
-func New(ctx context.Context, service *service.Service, cache *cache.Cache, messenger *messenger.Messenger) *Parser {
+func New(service *service.Service, cache *cache.Cache, messenger *messenger.Messenger) *Parser {
 	return &Parser{
-		ctx:       ctx,
 		service:   service,
 		cache:     cache,
 		messenger: messenger,
@@ -46,7 +44,7 @@ func (p *Parser) isCoffeeGolf(message string) bool {
 }
 
 // ParseGame parses a Coffee Golf game from a Discord message
-func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
+func (p *Parser) ParseMessage(ctx context.Context, m *discordgo.MessageCreate) (status int) {
 	message := m.Content
 
 	isCoffeGolf := p.isCoffeeGolf(message)
@@ -64,7 +62,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 
 		slog.Info("Processing a coffee golf message", "guild", guildID, "player", playerID)
 
-		tournament, created, err := p.service.GetOrCreateTournament(p.ctx, guildID, "parser")
+		tournament, created, err := p.service.GetOrCreateTournament(ctx, guildID, "parser")
 		if err != nil {
 			slog.Error("Failed to get or create tournament", "guild", guildID, "error", err)
 			return Failed
@@ -80,14 +78,14 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			}
 		}
 
-		round, holes, err := p.NewRoundFromString(message, guildID, playerID, tournament.ID)
+		round, holes, err := p.NewRoundFromString(ctx, message, guildID, playerID, tournament.ID)
 
 		if err != nil {
 			slog.Error("Failed to parse round", "round", round, "error", err)
 			return Failed
 		}
 
-		roundCreated, err := p.service.InsertRound(p.ctx, round, holes)
+		roundCreated, err := p.service.InsertRound(ctx, round, holes)
 		if err != nil {
 			slog.Error("Failed to insert round", "round", round, "error", err)
 			return ParsedButNotInserted
@@ -121,7 +119,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 
 			if roundCreated {
 				cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
-				p.cache.DeleteKey(cacheKey)
+				p.cache.DeleteKey(ctx, cacheKey)
 			}
 		}()
 
@@ -136,7 +134,7 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 }
 
 // NewRoundFromString returns a new Round from a string
-func (p *Parser) NewRoundFromString(message string, guildID int64, playerID int64, tournamentID int32) (*database.Round, []*database.Hole, error) {
+func (p *Parser) NewRoundFromString(ctx context.Context, message string, guildID int64, playerID int64, tournamentID int32) (*database.Round, []*database.Hole, error) {
 	lines := strings.Split(message, "\n")
 	dateLine := lines[0]
 	totalStrokeLine := lines[1]
@@ -155,7 +153,7 @@ func (p *Parser) NewRoundFromString(message string, guildID int64, playerID int6
 	percentLine := parsePercentLine(totalStrokeLine)
 	holes := parseStrokeLines(holeLine, strokesLine)
 
-	hasPlayed, err := p.service.HasPlayed(p.ctx, playerID, tournamentID, dateTime.Time)
+	hasPlayed, err := p.service.HasPlayed(ctx, playerID, tournamentID, dateTime.Time)
 	if err != nil {
 		slog.Error("Failed to check if player has played today", "player", playerID, "tournament", tournamentID, "error", err)
 		return nil, nil, err

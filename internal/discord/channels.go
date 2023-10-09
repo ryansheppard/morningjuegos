@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -14,8 +15,8 @@ import (
 
 const correctChannel = "morningjuegos"
 
-func (d *Discord) IsInCorrectChannel(guildID string, channelID string) (bool, error) {
-	cached, err := d.cache.GetKey(fmt.Sprintf("%s:%s", "channel", guildID))
+func (d *Discord) IsInCorrectChannel(ctx context.Context, guildID string, channelID string) (bool, error) {
+	cached, err := d.cache.GetKey(ctx, fmt.Sprintf("%s:%s", "channel", guildID))
 	if err != nil {
 		slog.Error("Failed to get channel from cache", "guild", guildID, "channel", channelID, "error", err)
 	}
@@ -36,7 +37,7 @@ func (d *Discord) IsInCorrectChannel(guildID string, channelID string) (bool, er
 
 	for _, channel := range channels {
 		if channel.ID == channelID && strings.Contains(channel.Name, correctChannel) && channel.Type == discordgo.ChannelTypeGuildText {
-			d.cache.SetKey(fmt.Sprintf("%s:%s", "channel", guildID), channelID, 86400)
+			d.cache.SetKey(ctx, fmt.Sprintf("%s:%s", "channel", guildID), channelID, 86400)
 			return true, nil
 		}
 	}

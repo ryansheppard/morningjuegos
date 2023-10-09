@@ -36,12 +36,18 @@ var workerCmd = &cobra.Command{
 			}
 		}
 
-		c := cache.New(ctx, redisAddr, redisDBInt)
+		c := cache.New(redisAddr, redisDBInt)
 
 		dsn := os.Getenv("DB_DSN")
 		db, err := sql.Open("postgres", dsn)
 		if err != nil {
 			slog.Error("Error opening database connection", "error", err)
+			os.Exit(1)
+		}
+
+		err = db.Ping()
+		if err != nil {
+			slog.Error("Error pinging database", "error", err)
 			os.Exit(1)
 		}
 
@@ -56,7 +62,7 @@ var workerCmd = &cobra.Command{
 
 		token := os.Getenv("DISCORD_TOKEN")
 		appID := os.Getenv("DISCORD_APP_ID")
-		d, err := discord.NewDiscord(token, appID, m, c, cg)
+		d, err := discord.NewDiscord(ctx, token, appID, m, c, cg)
 		if err != nil {
 			slog.Error("Error creating discord", "error", err)
 			os.Exit(1)

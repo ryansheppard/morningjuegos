@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
@@ -10,6 +11,7 @@ import (
 )
 
 type Discord struct {
+	ctx        context.Context
 	Session    *discordgo.Session
 	AppID      string
 	messenger  *messenger.Messenger
@@ -17,7 +19,7 @@ type Discord struct {
 	CoffeeGolf *cg.Game
 }
 
-func NewDiscord(token string, appID string, messenger *messenger.Messenger, cache *cache.Cache, cg *cg.Game) (*Discord, error) {
+func NewDiscord(ctx context.Context, token string, appID string, messenger *messenger.Messenger, cache *cache.Cache, cg *cg.Game) (*Discord, error) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		slog.Error("Error creating Discord session", "error", err)
@@ -25,6 +27,7 @@ func NewDiscord(token string, appID string, messenger *messenger.Messenger, cach
 	}
 
 	return &Discord{
+		ctx:        ctx,
 		Session:    dg,
 		AppID:      appID,
 		messenger:  messenger,
