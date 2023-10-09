@@ -29,7 +29,6 @@ func (d *Discord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate
 	if !isInCorrectChannel {
 		return
 	}
-	slog.Info("stuff", "channel", m.ChannelID, "correct", isInCorrectChannel)
 
 	status := d.CoffeeGolf.Parser.ParseMessage(m)
 	switch status {

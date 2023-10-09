@@ -52,8 +52,6 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 	isCoffeGolf := p.isCoffeeGolf(message)
 
 	if isCoffeGolf {
-		slog.Info("Processing a coffee golf message")
-
 		guildID, err := strconv.ParseInt(m.GuildID, 10, 64)
 		if err != nil {
 			return Failed
@@ -63,6 +61,8 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 		if err != nil {
 			return Failed
 		}
+
+		slog.Info("Processing a coffee golf message", "guild", guildID, "player", playerID)
 
 		tournament, created, err := p.service.GetOrCreateTournament(p.ctx, guildID, "parser")
 		if err != nil {
@@ -95,32 +95,35 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 
 		firstRound := round.FirstRound
 
-		// Add missing rounds and add to postgame
-		if roundCreated && firstRound {
-			rcMsg := messenger.RoundCreated{
-				GuildID:      guildID,
-				TournamentID: tournament.ID,
-				PlayerID:     playerID,
-			}
-			err = p.messenger.PublishMessage(&rcMsg)
-			if err != nil {
-				slog.Error("Failed to publish message", "message", rcMsg, "error", err)
+		go func() {
+			// Add missing rounds and add to postgame thread
+			if roundCreated && firstRound {
+				rcMsg := messenger.RoundCreated{
+					GuildID:      guildID,
+					TournamentID: tournament.ID,
+					PlayerID:     playerID,
+				}
+				err = p.messenger.PublishMessage(&rcMsg)
+				if err != nil {
+					slog.Error("Failed to publish message", "message", rcMsg, "error", err)
+				}
+
+				pgMessage := messenger.AddPostGame{
+					GuildID:   guildID,
+					PlayerID:  playerID,
+					ChannelID: m.ChannelID,
+				}
+				err = p.messenger.PublishMessage(&pgMessage)
+				if err != nil {
+					slog.Error("Failed to publish message", "message", pgMessage, "error", err)
+				}
 			}
 
-			pgMessage := messenger.AddPostGame{
-				GuildID:   guildID,
-				PlayerID:  playerID,
-				ChannelID: m.ChannelID,
+			if roundCreated {
+				cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
+				p.cache.DeleteKey(cacheKey)
 			}
-			err = p.messenger.PublishMessage(&pgMessage)
-			if err != nil {
-				slog.Error("Failed to publish message", "message", pgMessage, "error", err)
-			}
-		}
-
-		// clear cache
-		cacheKey := leaderboard.GetLeaderboardCacheKey(guildID)
-		p.cache.DeleteKey(cacheKey)
+		}()
 
 		if firstRound {
 			return FirstRound

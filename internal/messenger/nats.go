@@ -50,7 +50,7 @@ func (m *Messenger) SubscribeAsync(subject string, f func(m *nats.Msg)) {
 	}
 
 	slog.Info("Subscribing to NATS", "subject", subject)
-	m.connection.Subscribe(subject, f)
+	m.connection.QueueSubscribe(subject, "morningjuegos", f)
 }
 
 func (m *Messenger) CleanUp() {

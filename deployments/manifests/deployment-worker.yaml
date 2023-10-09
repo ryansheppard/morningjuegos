@@ -6,6 +6,7 @@ metadata:
     app: morning-juegos
     component: worker
 spec:
+  replicas: 3
   selector:
     matchLabels:
       app: morning-juegos
