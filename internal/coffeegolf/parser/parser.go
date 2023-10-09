@@ -156,11 +156,7 @@ func (p *Parser) NewRoundFromString(message string, guildID int64, playerID int6
 	if err != nil {
 		slog.Error("Failed to check if player has played today", "player", playerID, "tournament", tournamentID, "error", err)
 		return nil, nil, err
-	} else {
-		slog.Info("Has played", "player", playerID, "tournament", tournamentID, "hasPlayed", hasPlayed)
 	}
-
-	slog.Info("date", "time", dateTime.Time)
 
 	return &database.Round{
 		TournamentID: tournamentID,
