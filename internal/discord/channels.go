@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -34,7 +35,7 @@ func (d *Discord) IsInCorrectChannel(guildID string, channelID string) (bool, er
 	}
 
 	for _, channel := range channels {
-		if channel.ID == channelID && channel.Name == correctChannel && channel.Type == discordgo.ChannelTypeGuildText {
+		if channel.ID == channelID && strings.Contains(channel.Name, correctChannel) && channel.Type == discordgo.ChannelTypeGuildText {
 			d.cache.SetKey(fmt.Sprintf("%s:%s", "channel", guildID), channelID, 86400)
 			return true, nil
 		}
