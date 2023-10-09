@@ -82,14 +82,6 @@ func (g *Game) GetCommands() []*discordgo.ApplicationCommand {
 		{
 			Name:        "coffeegolf",
 			Description: "Gets the leaderboard for Coffee Golf",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "date-option",
-					Description: "The date to get the stats for",
-					Required:    false,
-				},
-			},
 		},
 		{
 			Name:        "coffeestats",
