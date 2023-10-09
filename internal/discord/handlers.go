@@ -1,6 +1,8 @@
 package discord
 
 import (
+	"log/slog"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -18,6 +20,16 @@ func (d *Discord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
+
+	isInCorrectChannel, err := d.IsInCorrectChannel(m.GuildID, m.ChannelID)
+	if err != nil {
+		slog.Info("Error getting guild channels", "error", err)
+	}
+
+	if !isInCorrectChannel {
+		return
+	}
+	slog.Info("stuff", "channel", m.ChannelID, "correct", isInCorrectChannel)
 
 	status := d.CoffeeGolf.Parser.ParseMessage(m)
 	switch status {

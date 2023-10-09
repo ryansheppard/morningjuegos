@@ -56,7 +56,7 @@ var workerCmd = &cobra.Command{
 
 		token := os.Getenv("DISCORD_TOKEN")
 		appID := os.Getenv("DISCORD_APP_ID")
-		d, err := discord.NewDiscord(token, appID, m, cg)
+		d, err := discord.NewDiscord(token, appID, m, c, cg)
 		if err != nil {
 			slog.Error("Error creating discord", "error", err)
 			os.Exit(1)

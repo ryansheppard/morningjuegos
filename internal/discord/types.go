@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/ryansheppard/morningjuegos/internal/cache"
 	cg "github.com/ryansheppard/morningjuegos/internal/coffeegolf/game"
 	"github.com/ryansheppard/morningjuegos/internal/messenger"
 )
@@ -11,11 +12,12 @@ import (
 type Discord struct {
 	Session    *discordgo.Session
 	AppID      string
-	Messenger  *messenger.Messenger
+	messenger  *messenger.Messenger
+	cache      *cache.Cache
 	CoffeeGolf *cg.Game
 }
 
-func NewDiscord(token string, appID string, messenger *messenger.Messenger, cg *cg.Game) (*Discord, error) {
+func NewDiscord(token string, appID string, messenger *messenger.Messenger, cache *cache.Cache, cg *cg.Game) (*Discord, error) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		slog.Error("Error creating Discord session", "error", err)
@@ -25,7 +27,8 @@ func NewDiscord(token string, appID string, messenger *messenger.Messenger, cg *
 	return &Discord{
 		Session:    dg,
 		AppID:      appID,
-		Messenger:  messenger,
+		messenger:  messenger,
+		cache:      cache,
 		CoffeeGolf: cg,
 	}, nil
 }

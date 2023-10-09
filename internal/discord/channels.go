@@ -11,8 +11,40 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/messenger"
 )
 
+const correctChannel = "morningjuegos"
+
+func (d *Discord) IsInCorrectChannel(guildID string, channelID string) (bool, error) {
+	cached, err := d.cache.GetKey(fmt.Sprintf("%s:%s:%s", "correctChannel", guildID, channelID))
+	if err != nil {
+		slog.Error("Failed to get channel from cache", "guild", guildID, "channel", channelID, "error", err)
+	}
+
+	if cached != nil {
+		return cached.(string) == "1", nil
+	}
+
+	channels, err := d.Session.GuildChannels(guildID)
+	if err != nil {
+		slog.Error("Error getting guild channels", "error", err)
+		return false, err
+	}
+
+	inCorrectChannel := false
+	for _, channel := range channels {
+		if channel.ID == channelID && channel.Name == correctChannel && channel.Type == discordgo.ChannelTypeGuildText {
+			inCorrectChannel = true
+			break
+		}
+
+	}
+
+	d.cache.SetKey(fmt.Sprintf("%s:%s:%s", "correctChannel", guildID, channelID), inCorrectChannel, 86400)
+
+	return inCorrectChannel, nil
+}
+
 func (d *Discord) ConfigureSubscribers() {
-	d.Messenger.SubscribeAsync(messenger.AddPostGameKey, d.ProcessPostGame)
+	d.messenger.SubscribeAsync(messenger.AddPostGameKey, d.ProcessPostGame)
 }
 
 func (d *Discord) ProcessPostGame(msg *nats.Msg) {
@@ -26,14 +58,6 @@ func (d *Discord) ProcessPostGame(msg *nats.Msg) {
 }
 
 func (d *Discord) CreatePostgame(guildID int64, playerID int64, channelID string) error {
-	// TODO: check that this in morningjuegos
-	// channels, _ := d.Session.GuildChannels(m.GuildID)
-	// for _, channel := range channels {
-	// 	if channel.Name == "morningjuegos" {
-	// 		channelID = channel.ID
-	// 	}
-	// }
-
 	guildIDAsString := strconv.FormatInt(guildID, 10)
 	playerIDAsString := strconv.FormatInt(playerID, 10)
 
