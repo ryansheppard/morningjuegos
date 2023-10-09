@@ -57,7 +57,7 @@ func (g *Game) AddMissingRoundsForGuild(guildID int64) {
 	// Missing rounds should only be added after the entire day has passed.
 	numDaysPlayed := math.Floor(time.Since(start).Hours()/24) - 1
 
-	for i := float64(0); i < numDaysPlayed; i++ {
+	for i := float64(0); i <= numDaysPlayed; i++ {
 		day := start.Add(time.Duration(i) * 24 * time.Hour)
 		for _, player := range players {
 			hasPlayed, err := g.service.HasPlayed(g.ctx, player, tournament.ID, day)

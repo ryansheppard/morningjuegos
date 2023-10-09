@@ -3,6 +3,7 @@ package messenger
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 )
 
 var (
@@ -12,6 +13,11 @@ var (
 )
 
 // TODO: refactor these to use an interface or something
+
+type Message interface {
+	AsBytes() ([]byte, error)
+	GetKey() string
+}
 
 type RoundCreated struct {
 	GuildID      int64           `json:"guild_id"`
@@ -26,8 +32,12 @@ func NewRoundCreatedFromJson(bytes []byte) (RoundCreated, error) {
 	return msg, err
 }
 
-func (r RoundCreated) AsBytes() ([]byte, error) {
+func (r *RoundCreated) AsBytes() ([]byte, error) {
 	return json.Marshal(r)
+}
+
+func (r *RoundCreated) GetKey() string {
+	return RoundCreatedKey
 }
 
 type TournamentCreated struct {
@@ -44,6 +54,10 @@ func (t *TournamentCreated) AsBytes() ([]byte, error) {
 	return json.Marshal(t)
 }
 
+func (t *TournamentCreated) GetKey() string {
+	return TournamentCreatedKey
+}
+
 type AddPostGame struct {
 	GuildID   int64  `json:"guild_id"`
 	PlayerID  int64  `json:"player_id"`
@@ -58,4 +72,20 @@ func NewAddPostGameFromJson(bytes []byte) (AddPostGame, error) {
 
 func (a *AddPostGame) AsBytes() ([]byte, error) {
 	return json.Marshal(a)
+}
+
+func (a *AddPostGame) GetKey() string {
+	return AddPostGameKey
+}
+
+func (m *Messenger) PublishMessage(msg Message) error {
+	bytes, err := msg.AsBytes()
+	if err != nil {
+		slog.Error("Failed to marshal message", "message", msg, "error", err)
+		return err
+	} else {
+		m.Publish(msg.GetKey(), bytes)
+	}
+
+	return nil
 }

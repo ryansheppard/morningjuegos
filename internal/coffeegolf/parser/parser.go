@@ -74,11 +74,9 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 			msg := messenger.TournamentCreated{
 				GuildID: guildID,
 			}
-			bytes, err := msg.AsBytes()
+			err = p.messenger.PublishMessage(&msg)
 			if err != nil {
-				slog.Error("Failed to marshal message", "message", msg, "error", err)
-			} else {
-				p.messenger.Publish(messenger.TournamentCreatedKey, bytes)
+				slog.Error("Failed to publish message", "message", msg, "error", err)
 			}
 		}
 
@@ -104,11 +102,9 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 				TournamentID: tournament.ID,
 				PlayerID:     playerID,
 			}
-			bytes, err := rcMsg.AsBytes()
+			err = p.messenger.PublishMessage(&rcMsg)
 			if err != nil {
-				slog.Error("Failed to marshal message", "message", rcMsg, "error", err)
-			} else {
-				p.messenger.Publish(messenger.RoundCreatedKey, bytes)
+				slog.Error("Failed to publish message", "message", rcMsg, "error", err)
 			}
 
 			pgMessage := messenger.AddPostGame{
@@ -116,11 +112,9 @@ func (p *Parser) ParseMessage(m *discordgo.MessageCreate) (status int) {
 				PlayerID:  playerID,
 				ChannelID: m.ChannelID,
 			}
-			bytes, err = pgMessage.AsBytes()
+			err = p.messenger.PublishMessage(&pgMessage)
 			if err != nil {
-				slog.Error("Failed to marshal message", "message", pgMessage, "error", err)
-			} else {
-				p.messenger.Publish(messenger.AddPostGameKey, bytes)
+				slog.Error("Failed to publish message", "message", pgMessage, "error", err)
 			}
 		}
 
