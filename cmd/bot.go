@@ -81,6 +81,8 @@ var botCmd = &cobra.Command{
 		slog.Info("Shutting down MorningJuegos bot")
 
 		d.Session.Close()
+		m.CleanUp()
+		slog.Info("MorningJuegos bot shut down")
 	},
 }
 

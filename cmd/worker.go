@@ -70,6 +70,10 @@ var workerCmd = &cobra.Command{
 		signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 		<-sc
 		slog.Info("Shutting down MorningJuegos worker")
+
+		m.CleanUp()
+
+		slog.Info("MorningJuegos bot shut down")
 	},
 }
 
