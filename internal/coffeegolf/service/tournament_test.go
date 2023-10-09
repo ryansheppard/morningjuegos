@@ -373,12 +373,12 @@ func TestGetLeaders(t *testing.T) {
 		AddRow(1, 10).
 		AddRow(2, 11).
 		AddRow(3, 12)
-	mock.ExpectQuery("SELECT.+").WithArgs(1, AnyTime{}, AnyTime{}).WillReturnRows(rows)
+	mock.ExpectQuery("SELECT.+").WithArgs(1).WillReturnRows(rows)
 
 	queries := database.New(d)
 	service := New(d, queries)
 
-	leaders, err := service.GetLeaders(ctx, 1, time.Now().Add(-24*time.Hour), time.Now())
+	leaders, err := service.GetLeaders(ctx, 1)
 	if err != nil {
 		t.Errorf("error was not expected while getting leaders: %s", err)
 	}
@@ -399,7 +399,7 @@ func TestGetLeadersFails(t *testing.T) {
 	queries := database.New(d)
 	service := New(d, queries)
 
-	_, err = service.GetLeaders(ctx, 1, time.Now().Add(-24*time.Hour), time.Now())
+	_, err = service.GetLeaders(ctx, 1)
 	if err == nil {
 		t.Errorf("expected error while getting leaders, got nil")
 	}

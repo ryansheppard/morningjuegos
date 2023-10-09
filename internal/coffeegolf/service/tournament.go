@@ -175,12 +175,8 @@ func (s *Service) CreateTournamentPlacement(ctx context.Context, playerID int64,
 	return nil
 }
 
-func (s *Service) GetLeaders(ctx context.Context, tournamentID int32, start time.Time, end time.Time) ([]*Leader, error) {
-	leaders, err := s.queries.GetLeaders(ctx, database.GetLeadersParams{
-		TournamentID: tournamentID,
-		RoundDate:    sql.NullTime{Time: start, Valid: true},
-		RoundDate_2:  sql.NullTime{Time: end, Valid: true},
-	})
+func (s *Service) GetLeaders(ctx context.Context, tournamentID int32) ([]*Leader, error) {
+	leaders, err := s.queries.GetLeaders(ctx, tournamentID)
 
 	if err != nil {
 		slog.Error("Failed to get leaders", "tournamentid", tournamentID, "error", err)

@@ -415,25 +415,17 @@ SELECT SUM(total_strokes) AS total_strokes, player_id
 FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
-AND round_date >= $2
-AND round_date <= $3
 GROUP BY player_id
 ORDER BY total_strokes ASC
 `
-
-type GetLeadersParams struct {
-	TournamentID int32
-	RoundDate    sql.NullTime
-	RoundDate_2  sql.NullTime
-}
 
 type GetLeadersRow struct {
 	TotalStrokes int64
 	PlayerID     int64
 }
 
-func (q *Queries) GetLeaders(ctx context.Context, arg GetLeadersParams) ([]GetLeadersRow, error) {
-	rows, err := q.db.QueryContext(ctx, getLeaders, arg.TournamentID, arg.RoundDate, arg.RoundDate_2)
+func (q *Queries) GetLeaders(ctx context.Context, tournamentID int32) ([]GetLeadersRow, error) {
+	rows, err := q.db.QueryContext(ctx, getLeaders, tournamentID)
 	if err != nil {
 		return nil, err
 	}

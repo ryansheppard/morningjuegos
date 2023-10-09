@@ -45,9 +45,6 @@ func New(ctx context.Context, service *service.Service, cache *cache.Cache) *Lea
 }
 
 func (l *Leaderboard) GenerateLeaderboard(guildIDAsString string) string {
-	// todo: find better way to do this
-	startTime := time.Now().Add(11 * -24 * time.Hour)
-	endTime := time.Now().Add(24 * time.Hour)
 	// includeEmoji gets set false when parsing a date specific leaderboard, so it gets used in a lot of places
 	includeEmoji := true
 
@@ -57,7 +54,7 @@ func (l *Leaderboard) GenerateLeaderboard(guildIDAsString string) string {
 		return "Could not generate a leaderboard for this discord server"
 	}
 
-	slog.Info("Generating leaderboard", "guild", guildID, "startTime", startTime, "endTime", endTime)
+	slog.Info("Generating leaderboard", "guild", guildID)
 
 	tournament, err := l.service.GetActiveTournament(l.ctx, guildID)
 	if err == sql.ErrNoRows {
@@ -89,8 +86,6 @@ func (l *Leaderboard) GenerateLeaderboard(guildIDAsString string) string {
 		GuildID:      guildID,
 		TournamentID: tournament.ID,
 		FirstRound:   true,
-		StartTime:    startTime,
-		EndTime:      endTime,
 		IncludeEmoji: includeEmoji,
 	}
 	leaderString := l.generateLeaderString(leaderParams)
@@ -157,14 +152,12 @@ type generateLeaderStringParams struct {
 	GuildID      int64
 	TournamentID int32
 	FirstRound   bool
-	StartTime    time.Time
-	EndTime      time.Time
 	IncludeEmoji bool
 }
 
 func (l *Leaderboard) generateLeaderString(params generateLeaderStringParams) string {
 	slog.Info("Generating leaderboard string", "guild", params.GuildID, "tournament", params)
-	strokeLeaders, err := l.service.GetLeaders(l.ctx, params.TournamentID, params.StartTime, params.EndTime)
+	strokeLeaders, err := l.service.GetLeaders(l.ctx, params.TournamentID)
 
 	if err != nil {
 		slog.Error("Failed to get leaders", "guild", params.GuildID, "error", err)
