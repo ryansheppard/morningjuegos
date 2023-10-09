@@ -3,7 +3,6 @@ package messenger
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 )
 
 var (
@@ -76,16 +75,4 @@ func (a *AddPostGame) AsBytes() ([]byte, error) {
 
 func (a *AddPostGame) GetKey() string {
 	return AddPostGameKey
-}
-
-func (m *Messenger) PublishMessage(msg Message) error {
-	bytes, err := msg.AsBytes()
-	if err != nil {
-		slog.Error("Failed to marshal message", "message", msg, "error", err)
-		return err
-	} else {
-		m.Publish(msg.GetKey(), bytes)
-	}
-
-	return nil
 }

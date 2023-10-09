@@ -31,6 +31,18 @@ func (m *Messenger) Publish(subject string, data []byte) error {
 	return m.connection.Publish(subject, data)
 }
 
+func (m *Messenger) PublishMessage(msg Message) error {
+	bytes, err := msg.AsBytes()
+	if err != nil {
+		slog.Error("Failed to marshal message", "message", msg, "error", err)
+		return err
+	} else {
+		m.Publish(msg.GetKey(), bytes)
+	}
+
+	return nil
+}
+
 func (m *Messenger) SubscribeAsync(subject string, f func(m *nats.Msg)) {
 	if m.connection == nil {
 		slog.Info("No NATS connection, not subscribing", "subject", subject)
