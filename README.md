@@ -3,7 +3,7 @@
 MorningJuegos is a Discord bot taken too far. What started as a Discord channel for sharing results from games like NYT Connections and Coffee Golf became a full blown tournament.
 
 ## What it does
-MorningJuegos will watch Discord and try to match any messages shared from Coffee Golf. It will then pull all of the information from the message and store it. Each message is connected to a 10 day tournament. The first shared message of the day from each user is counted torwards their total in the tournament. During the tournament, the bot can be queried to see the overall leaderboard.
+MorningJuegos will watch Discord and try to match any messages shared from Coffee Golf. It will then pull all of the information from the message and store it. Each message is connected to a 10 day tournament. The first shared message of the day from each user is counted torwards their total in the tournament. During the tournament, the bot can be queried to see the overall leaderboard. Additionally, users are added to a private post-game thread to discuss the round without spoiling it for others.
 
 ### Example Share Message
 ```
@@ -35,7 +35,7 @@ Worst round of the tournament: @player3, 17 strokes 🤡
 Most common opening hole: 🟩
 Most common finishing hole: 🟪
 Hardest hole: 🟨 with an average of 3.07 strokes
-[All Time] Most consistent players: @player1 @player5 with a standard deviation of 0.577 strokes
+[All Time] Most consistent players: @player1, @player5 with a standard deviation of 0.577 strokes
 [All Time] Least consistent players: @player3 with a standard deviation of 1.732 strokes
 ```
 
