@@ -70,6 +70,12 @@ var botCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// copyPastaPath := os.Getenv("COPY_PASTA_PATH")
+		// err = d.LoadCopyPastaFromJson(copyPastaPath)
+		// if err != nil {
+		// 	slog.Error("Error loading copy pasta, skipping", "error", err)
+		// }
+
 		err = d.Configure()
 		if err != nil {
 			slog.Error("Error configuring discord", "error", err)

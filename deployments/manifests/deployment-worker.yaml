@@ -35,8 +35,18 @@ spec:
               value: nats.default.svc.cluster.local:4222
             - name: OTEL_SERVICE_NAME
               value: "morningjuegos.worker"
+            - name: COPY_PASTA_PATH
+              value: "/etc/morningjuegos/copypasta.json"
           envFrom:
             - secretRef:
                 name: morning-juegos
             - secretRef:
                 name: honeycomb
+          volumeMounts:
+            - name: copypasta
+              mountPath: /etc/morningjuegos
+              readOnly: true
+      volumes:
+        - name: copypasta
+          configMap:
+            name: copypasta

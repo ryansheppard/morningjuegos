@@ -17,6 +17,7 @@ type Discord struct {
 	messenger  *messenger.Messenger
 	cache      *cache.Cache
 	CoffeeGolf *cg.Game
+	copyPastas map[int64]CopyPasta
 }
 
 func NewDiscord(ctx context.Context, token string, appID string, messenger *messenger.Messenger, cache *cache.Cache, cg *cg.Game) (*Discord, error) {

@@ -115,6 +115,17 @@ func (p *Parser) ParseMessage(ctx context.Context, m *discordgo.MessageCreate) (
 				if err != nil {
 					slog.Error("Failed to publish message", "message", pgMessage, "error", err)
 				}
+
+				if round.TotalStrokes >= 15 {
+					err = p.messenger.PublishMessage(&messenger.CopyPasta{
+						PlayerID:  round.PlayerID,
+						ChannelID: m.ChannelID,
+						GuildID:   guildID,
+					})
+					if err != nil {
+						slog.Error("Failed to publish message", "message", pgMessage, "error", err)
+					}
+				}
 			}
 
 			if roundCreated {

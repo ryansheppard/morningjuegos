@@ -9,6 +9,7 @@ var (
 	RoundCreatedKey      = "round.created"
 	TournamentCreatedKey = "tournament.created"
 	AddPostGameKey       = "postgame.add"
+	CopyPastaKey         = "copypasta.send"
 )
 
 type Message interface {
@@ -73,4 +74,24 @@ func (a *AddPostGame) AsBytes() ([]byte, error) {
 
 func (a *AddPostGame) GetKey() string {
 	return AddPostGameKey
+}
+
+type CopyPasta struct {
+	ChannelID string `json:"channel_id"`
+	PlayerID  int64  `json:"player_id"`
+	GuildID   int64  `json:"guild_id"`
+}
+
+func NewCopyPastaFromJson(bytes []byte) (CopyPasta, error) {
+	var msg CopyPasta
+	err := json.Unmarshal(bytes, &msg)
+	return msg, err
+}
+
+func (c *CopyPasta) AsBytes() ([]byte, error) {
+	return json.Marshal(c)
+}
+
+func (c *CopyPasta) GetKey() string {
+	return CopyPastaKey
 }

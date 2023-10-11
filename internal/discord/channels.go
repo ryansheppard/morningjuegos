@@ -47,6 +47,29 @@ func (d *Discord) IsInCorrectChannel(ctx context.Context, guildID string, channe
 
 func (d *Discord) ConfigureSubscribers() {
 	d.messenger.SubscribeAsync(messenger.AddPostGameKey, d.ProcessPostGame)
+	d.messenger.SubscribeAsync(messenger.CopyPastaKey, d.ProcessCopyPasta)
+}
+
+func (d *Discord) ProcessCopyPasta(msg *nats.Msg) {
+	slog.Info("Processing copy pasta message")
+	copyPasta, err := messenger.NewCopyPastaFromJson(msg.Data)
+	if err != nil {
+		slog.Error("Failed to parse copy pasta message", "error", err)
+		return
+	}
+
+	d.SendCopyPasta(copyPasta.ChannelID, copyPasta.PlayerID, copyPasta.GuildID)
+}
+
+func (d *Discord) SendCopyPasta(channelID string, playerID int64, guildID int64) {
+	copyPasta, ok := d.copyPastas[playerID]
+	if ok {
+		if copyPasta.GuildID == guildID {
+			playerIDAsString := strconv.FormatInt(playerID, 10)
+			d.Session.ChannelMessageSend(channelID, fmt.Sprintf("<@%s> %s", playerIDAsString, copyPasta.Message))
+		}
+	}
+
 }
 
 func (d *Discord) ProcessPostGame(msg *nats.Msg) {

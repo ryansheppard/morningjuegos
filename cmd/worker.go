@@ -68,6 +68,12 @@ var workerCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		copyPastaPath := os.Getenv("COPY_PASTA_PATH")
+		err = d.LoadCopyPastaFromJson(copyPastaPath)
+		if err != nil {
+			slog.Error("Error loading copy pasta, skipping", "error", err)
+		}
+
 		cg.ConfigureSubscribers()
 		d.ConfigureSubscribers()
 
