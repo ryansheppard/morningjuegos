@@ -181,6 +181,8 @@ func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateL
 	notYetPlayed := []string{}
 	skipCounter := 0
 	for i, leader := range strokeLeaders {
+		emojiStrings := []string{}
+
 		prev := -1
 		if previousPlacement, ok := previousPlacements[leader.PlayerID]; ok {
 			prev = previousPlacement
@@ -189,6 +191,7 @@ func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateL
 		placementString := ""
 		if params.IncludeEmoji && prev > 0 {
 			placementString = l.getPlacementEmoji(prev)
+			emojiStrings = append(emojiStrings, placementString)
 		}
 
 		hasPlayed, err := l.service.HasPlayedToday(ctx, leader.PlayerID, params.TournamentID)
@@ -200,6 +203,7 @@ func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateL
 		movement := "❌"
 		if hasPlayed {
 			movement = l.getPreviousPlacementEmoji(prev, i+1)
+			emojiStrings = append(emojiStrings, movement)
 		}
 
 		previousWinString := ""
@@ -208,21 +212,18 @@ func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateL
 			if ok {
 				if previousWins > 0 {
 					previousWinString = fmt.Sprintf("%d 👑", previousWins)
+					emojiStrings = append(emojiStrings, previousWinString)
 				}
 			}
 		}
 
+		emojiString := strings.Join(emojiStrings, " ")
+
 		if hasPlayed {
-			strokeString := fmt.Sprintf("%d: <@%d> - %d Total Strokes", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes)
-			finalString := strings.Join([]string{
-				strokeString,
-				placementString,
-				movement,
-				previousWinString,
-			}, " ")
-			leaderStrings = append(leaderStrings, finalString)
+			strokeString := fmt.Sprintf("%d. <@%d> - %d Strokes %s", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes, emojiString)
+			leaderStrings = append(leaderStrings, strokeString)
 		} else {
-			notYetPlayed = append(notYetPlayed, fmt.Sprintf("<@%d> - %d Total Strokes %s", leader.PlayerID, leader.TotalStrokes, placementString))
+			notYetPlayed = append(notYetPlayed, fmt.Sprintf("<@%d> - %d Strokes", leader.PlayerID, leader.TotalStrokes))
 			skipCounter++
 		}
 	}
