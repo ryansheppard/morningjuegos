@@ -200,7 +200,7 @@ func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateL
 			continue
 		}
 
-		movement := "❌"
+		movement := ""
 		if hasPlayed {
 			movement = l.getPreviousPlacementEmoji(prev, i+1)
 			emojiStrings = append(emojiStrings, movement)
