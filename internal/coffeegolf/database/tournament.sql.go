@@ -168,7 +168,7 @@ FROM round
 WHERE tournament_id = $1
 AND first_round = TRUE
 GROUP BY player_id
-ORDER BY total_strokes ASC, inserted_by ASC
+ORDER BY total_strokes ASC
 `
 
 type GetLeadersRow struct {
@@ -206,7 +206,7 @@ WHERE tournament_id = $1
 AND first_round = TRUE
 AND round_date < $2
 GROUP BY player_id
-ORDER BY total_strokes ASC, inserted_by ASC
+ORDER BY total_strokes ASC
 `
 
 type GetPlacementsForPeriodParams struct {
