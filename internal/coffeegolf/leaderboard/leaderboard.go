@@ -191,7 +191,6 @@ func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateL
 		placementString := ""
 		if params.IncludeEmoji && prev > 0 {
 			placementString = l.getPlacementEmoji(prev)
-			emojiStrings = append(emojiStrings, placementString)
 		}
 
 		hasPlayed, err := l.service.HasPlayedToday(ctx, leader.PlayerID, params.TournamentID)
@@ -223,7 +222,7 @@ func (l *Leaderboard) generateLeaderString(ctx context.Context, params generateL
 			strokeString := fmt.Sprintf("%d. <@%d> - %d Strokes %s", i+1-skipCounter, leader.PlayerID, leader.TotalStrokes, emojiString)
 			leaderStrings = append(leaderStrings, strokeString)
 		} else {
-			notYetPlayed = append(notYetPlayed, fmt.Sprintf("<@%d> - %d Strokes", leader.PlayerID, leader.TotalStrokes))
+			notYetPlayed = append(notYetPlayed, fmt.Sprintf("<@%d> - %d Strokes %s", leader.PlayerID, leader.TotalStrokes, placementString))
 			skipCounter++
 		}
 	}
