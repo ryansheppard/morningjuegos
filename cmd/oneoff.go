@@ -63,6 +63,11 @@ var oneOffCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		if guildID == 0 {
+			slog.Error("Guild ID is required")
+			os.Exit(1)
+		}
+
 		cg.AddTournamentWinnersForGuild(guildID)
 
 		m.CleanUp()
