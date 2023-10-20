@@ -242,6 +242,24 @@ func (q *Queries) GetPlacementsForPeriod(ctx context.Context, arg GetPlacementsF
 	return items, nil
 }
 
+const getTournament = `-- name: GetTournament :one
+SELECT id, guild_id, start_time, end_time, inserted_at, inserted_by FROM tournament WHERE id = $1
+`
+
+func (q *Queries) GetTournament(ctx context.Context, id int32) (Tournament, error) {
+	row := q.db.QueryRowContext(ctx, getTournament, id)
+	var i Tournament
+	err := row.Scan(
+		&i.ID,
+		&i.GuildID,
+		&i.StartTime,
+		&i.EndTime,
+		&i.InsertedAt,
+		&i.InsertedBy,
+	)
+	return i, err
+}
+
 const getTournamentByForDate = `-- name: GetTournamentByForDate :one
 SELECT id, guild_id, start_time, end_time, inserted_by FROM tournament WHERE guild_id = $1 AND start_time <= $2 AND end_time >= $2
 `

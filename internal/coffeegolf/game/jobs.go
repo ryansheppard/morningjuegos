@@ -26,15 +26,23 @@ func (g *Game) ProcessAddMissingRounds(msg *nats.Msg) {
 		slog.Error("Failed to parse round created message", "error", err)
 	}
 
-	g.AddMissingRoundsForGuild(roundCreated.GuildID)
+	tournament, err := g.service.GetActiveTournament(g.ctx, roundCreated.GuildID)
+	if err == sql.ErrNoRows {
+		slog.Error("No active tournament", "guild", roundCreated.GuildID, "error", err)
+		return
+	} else if err != nil {
+		slog.Error("Failed to get active tournament", "guild", roundCreated.GuildID, "error", err)
+	}
+
+	g.AddMissingRoundsForGuild(roundCreated.GuildID, tournament.ID)
 }
 
-func (g *Game) AddMissingRoundsForGuild(guildID int64) {
+func (g *Game) AddMissingRoundsForGuild(guildID int64, tournamentID int32) {
 	slog.Info("Adding missing rounds for guild", "guild", guildID)
 
-	tournament, err := g.service.GetActiveTournament(g.ctx, guildID)
+	tournament, err := g.service.GetTournament(g.ctx, tournamentID)
 	if err == sql.ErrNoRows {
-		slog.Error("No active tournament", "guild", guildID, "error", err)
+		slog.Error("No active tournament", "tournamentID", tournamentID, "error", err)
 		return
 	} else if err != nil {
 		slog.Error("Failed to get active tournament", "guild", guildID, "error", err)
@@ -48,7 +56,7 @@ func (g *Game) AddMissingRoundsForGuild(guildID int64) {
 
 	players, err := g.service.GetUniquePlayersInTournament(g.ctx, tournament.ID)
 	if err != nil {
-		slog.Error("Failed to get unique players in tournament", "tournament", tournament, "error", err)
+		slog.Error("Failed to get unique players in tournament", "tournamentID", tournament.ID, "error", err)
 		return
 	}
 
@@ -114,6 +122,8 @@ func (g *Game) AddTournamentWinnersForGuild(guildID int64) {
 	}
 
 	for _, tournament := range tournaments {
+		g.AddMissingRoundsForGuild(guildID, tournament.ID)
+
 		uniquePlayers, err := g.service.GetUniquePlayersInTournament(g.ctx, tournament.ID)
 		if err != nil {
 			slog.Error("Failed to get unique players in tournament", "tournament", tournament, "error", err)

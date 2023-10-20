@@ -9,6 +9,23 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/coffeegolf/database"
 )
 
+func (s *Service) GetTournament(ctx context.Context, tournamentID int32) (*database.Tournament, error) {
+	tournament, err := s.queries.GetTournament(ctx, tournamentID)
+
+	if err != nil {
+		slog.Error("Failed to get tournament", "tournamentID", tournamentID, "error", err)
+		return nil, err
+
+	}
+
+	return &database.Tournament{
+		ID:        tournament.ID,
+		GuildID:   tournament.GuildID,
+		StartTime: tournament.StartTime,
+		EndTime:   tournament.EndTime,
+	}, nil
+}
+
 func (s *Service) GetActiveTournament(ctx context.Context, guildID int64) (*database.Tournament, error) {
 	tournament, err := s.queries.GetActiveTournament(ctx, guildID)
 	if err != nil {

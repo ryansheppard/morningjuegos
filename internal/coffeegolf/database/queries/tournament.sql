@@ -8,6 +8,9 @@ SELECT id, guild_id, start_time, end_time, inserted_by FROM tournament WHERE gui
 -- name: GetInactiveTournaments :many
 SELECT id, guild_id, start_time, end_time, inserted_by FROM tournament WHERE guild_id = $1 AND end_time < $2;
 
+-- name: GetTournament :one
+SELECT * FROM tournament WHERE id = $1;
+
 -- name: CreateTournament :one
 INSERT INTO tournament (guild_id, start_time, end_time, inserted_by) VALUES ($1, $2, $3, $4) RETURNING id, guild_id, start_time, end_time, inserted_by;
 
