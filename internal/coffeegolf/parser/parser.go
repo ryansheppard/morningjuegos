@@ -17,6 +17,8 @@ import (
 	"github.com/ryansheppard/morningjuegos/internal/messenger"
 )
 
+const postGameThreadEnabled = false
+
 const (
 	Failed               = -1
 	FirstRound           = 0
@@ -106,24 +108,27 @@ func (p *Parser) ParseMessage(ctx context.Context, m *discordgo.MessageCreate) (
 					slog.Error("Failed to publish message", "message", rcMsg, "error", err)
 				}
 
-				pgMessage := messenger.AddPostGame{
-					GuildID:   guildID,
-					PlayerID:  playerID,
-					ChannelID: m.ChannelID,
-				}
-				err = p.messenger.PublishMessage(&pgMessage)
-				if err != nil {
-					slog.Error("Failed to publish message", "message", pgMessage, "error", err)
+				if postGameThreadEnabled {
+					pgMessage := messenger.AddPostGame{
+						GuildID:   guildID,
+						PlayerID:  playerID,
+						ChannelID: m.ChannelID,
+					}
+					err = p.messenger.PublishMessage(&pgMessage)
+					if err != nil {
+						slog.Error("Failed to publish message", "message", pgMessage, "error", err)
+					}
 				}
 
 				if round.TotalStrokes >= 15 {
-					err = p.messenger.PublishMessage(&messenger.CopyPasta{
+					copyPastaMessage := messenger.CopyPasta{
 						PlayerID:  round.PlayerID,
 						ChannelID: m.ChannelID,
 						GuildID:   guildID,
-					})
+					}
+					err = p.messenger.PublishMessage(&copyPastaMessage)
 					if err != nil {
-						slog.Error("Failed to publish message", "message", pgMessage, "error", err)
+						slog.Error("Failed to publish message", "message", copyPastaMessage, "error", err)
 					}
 				}
 			}
