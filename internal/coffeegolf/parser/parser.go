@@ -175,6 +175,17 @@ func (p *Parser) NewRoundFromString(ctx context.Context, message string, guildID
 		return nil, nil, err
 	}
 
+	firstRound := true
+
+	if hasPlayed {
+		firstRound = false
+	}
+
+	// Prevent inserting rounds from other days as the first round
+	if dateTime.Time.Day() != time.Now().Day() {
+		firstRound = false
+	}
+
 	return &database.Round{
 		TournamentID: tournamentID,
 		PlayerID:     playerID,
@@ -183,7 +194,7 @@ func (p *Parser) NewRoundFromString(ctx context.Context, message string, guildID
 		TotalStrokes: int32(totalStrokes),
 		Percentage:   percentLine,
 		RoundDate:    dateTime,
-		FirstRound:   !hasPlayed,
+		FirstRound:   firstRound,
 		InsertedBy:   "parser",
 	}, holes, nil
 }
