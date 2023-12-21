@@ -67,7 +67,10 @@ func (g *Game) AddMissingRoundsForGuild(guildID int64, tournamentID int32) {
 	// Take the time since the start of the tournament, round the float to the nearest integer,
 	// and then subtract one to remove the current day.
 	// Missing rounds should only be added after the entire day has passed.
-	numDaysPlayed := math.Floor(time.Since(start).Hours()/24) - 1
+	numDaysPlayed := math.Floor(time.Since(start).Hours() / 24)
+	if tournament.EndTime.After(time.Now()) {
+		numDaysPlayed--
+	}
 
 	for i := float64(0); i <= numDaysPlayed; i++ {
 		day := start.Add(time.Duration(i) * 24 * time.Hour)
