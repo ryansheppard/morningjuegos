@@ -38,7 +38,7 @@ func (g *Game) ProcessAddMissingRounds(msg *nats.Msg) {
 }
 
 func (g *Game) AddMissingRoundsForGuild(guildID int64, tournamentID int32) {
-	slog.Info("Adding missing rounds for guild", "guild", guildID)
+	slog.Info("Adding missing rounds for guild", "guild", guildID, "tournament", tournamentID)
 
 	tournament, err := g.service.GetTournament(g.ctx, tournamentID)
 	if err == sql.ErrNoRows {
@@ -46,10 +46,6 @@ func (g *Game) AddMissingRoundsForGuild(guildID int64, tournamentID int32) {
 		return
 	} else if err != nil {
 		slog.Error("Failed to get active tournament", "guild", guildID, "error", err)
-	}
-
-	if tournament.EndTime.Before(time.Now()) {
-		return
 	}
 
 	// clear cache
@@ -67,13 +63,13 @@ func (g *Game) AddMissingRoundsForGuild(guildID int64, tournamentID int32) {
 	// Take the time since the start of the tournament, round the float to the nearest integer,
 	// and then subtract one to remove the current day.
 	// Missing rounds should only be added after the entire day has passed.
-	numDaysPlayed := math.Floor(time.Since(start).Hours() / 24)
-	if tournament.EndTime.After(time.Now()) {
-		numDaysPlayed--
-	}
+	numDaysPlayed := math.Floor(time.Since(start).Hours()/24) - 1
 
 	for i := float64(0); i <= numDaysPlayed; i++ {
 		day := start.Add(time.Duration(i) * 24 * time.Hour)
+		if day.Before(start) || day.After(tournament.EndTime) {
+			break
+		}
 		for _, player := range players {
 			hasPlayed, err := g.service.HasPlayed(g.ctx, player, tournament.ID, day)
 			if err != nil {
