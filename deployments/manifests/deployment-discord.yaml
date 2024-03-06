@@ -6,6 +6,7 @@ metadata:
     app: morning-juegos
     component: discord
 spec:
+  replicas: 0
   selector:
     matchLabels:
       app: morning-juegos
